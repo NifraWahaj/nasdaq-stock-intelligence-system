@@ -12,10 +12,8 @@ def _fetch_one(ticker: str, period: str) -> pd.DataFrame:
     if df.empty:
         raise ValueError(f"Empty response for {ticker}")
     
-    # --- ADD THESE TWO LINES TO FIX THE 'TUPLE' ERROR ---
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0) 
-    # ----------------------------------------------------
 
     df.reset_index(inplace=True)
     df.columns = [str(c).lower() for c in df.columns] # str(c) ensures it's a string
