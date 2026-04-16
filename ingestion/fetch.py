@@ -8,12 +8,21 @@ TICKERS = ["AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA","INTC","AMD","NFLX"
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=4, max=30), reraise=True)
 def _fetch_one(ticker: str, period: str) -> pd.DataFrame:
     df = yf.download(ticker, period=period, auto_adjust=True, progress=False, threads=False)
+    
     if df.empty:
         raise ValueError(f"Empty response for {ticker}")
+    
+    # --- ADD THESE TWO LINES TO FIX THE 'TUPLE' ERROR ---
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0) 
+    # ----------------------------------------------------
+
     df.reset_index(inplace=True)
-    df.columns = [c.lower() for c in df.columns]
+    df.columns = [str(c).lower() for c in df.columns] # str(c) ensures it's a string
     df.rename(columns={"datetime": "date"}, errors="ignore", inplace=True)
     df["symbol"] = ticker
+    
+    # Return the cleaned columns
     return df[["date","symbol","open","high","low","close","volume"]]
 
 def fetch_all(period="2y") -> pd.DataFrame:
