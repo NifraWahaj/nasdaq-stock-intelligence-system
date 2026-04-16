@@ -1,0 +1,44 @@
+# --- Python & Virtual Environments ---
+venv/
+.venv/
+env/
+bin/
+lib/
+include/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
+# --- Environment Variables  ---
+.env
+.flaskenv
+
+# --- OS Specific ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# --- Data & Models (Local Cache) ---
+data/*.csv
+data/*.json
+models/*.joblib
+models/*.pkl
+logs/*.log
+
+
+# --- Docker ---
+.docker/
+pgdata
