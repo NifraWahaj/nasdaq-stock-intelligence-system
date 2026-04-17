@@ -50,6 +50,9 @@ def task_load(df):
 def ingestion_flow(tickers: list[str] = TICKERS):
     task_init_db()
     df = task_fetch(tickers)
+    if df.empty:
+        logger.info("No new data to load.")
+        return {"inserted": 0, "skipped": 0}
     summary = task_load(df)
     logger.info(f"Ingestion flow complete: {summary}")
     return summary
