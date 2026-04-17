@@ -1,5 +1,4 @@
 version: "3.9"
-
 services:
   db:
     image: postgres:15
@@ -19,6 +18,35 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  prefect:
+    image: prefecthq/prefect:2-latest
+    container_name: nasdaq-prefect
+    command: prefect server start --host 0.0.0.0
+    ports:
+      - "4200:4200"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pipeline:
+    build: .
+    container_name: nasdaq-pipeline
+    command: python orchestration/flows.py
+    env_file: .env
+    environment:
+      PREFECT_API_URL: http://prefect:4200/api   # tells pipeline where Prefect server is
+      PYTHONPATH: .
+    volumes:
+      - .:/app
+      - model_store:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+      prefect:
+        condition: service_healthy   # wait for Prefect before running flows
 
   api:
     build: .
@@ -43,18 +71,6 @@ services:
       - "8501:8501"
     volumes:
       - .:/app
-    depends_on:
-      db:
-        condition: service_healthy
-
-  pipeline:
-    build: .
-    container_name: nasdaq-pipeline
-    command: python orchestration/flows.py
-    env_file: .env
-    volumes:
-      - .:/app
-      - model_store:/app/models
     depends_on:
       db:
         condition: service_healthy
