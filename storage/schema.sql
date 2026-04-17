@@ -1,52 +1,60 @@
--- 1. RAW DATA LAYER (ELT: Ingestion writes here)
+-- 1. RAW DATA LAYER
 CREATE TABLE IF NOT EXISTS prices (
     id          SERIAL PRIMARY KEY,
     date        DATE NOT NULL,
     symbol      VARCHAR(10) NOT NULL,
-    open        NUMERIC(12, 4),
-    high        NUMERIC(12, 4),
-    low         NUMERIC(12, 4),
-    close       NUMERIC(12, 4),
-    volume      BIGINT,
+    open        NUMERIC(12, 4) CHECK (open > 0),
+    high        NUMERIC(12, 4) CHECK (high > 0),
+    low         NUMERIC(12, 4) CHECK (low > 0),
+    close       NUMERIC(12, 4) CHECK (close > 0),
+    volume      BIGINT CHECK (volume >= 0),
     ingested_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (date, symbol) -- Critical for idempotency
+    UNIQUE (date, symbol),
+    CHECK (high >= low),              -- high can never be less than low
+    CHECK (high >= open),
+    CHECK (high >= close)
 );
 
--- 2. ANALYTICS LAYER (ELT: Transform writes here)
+-- 2. ANALYTICS LAYER
 CREATE TABLE IF NOT EXISTS features (
-    id          SERIAL PRIMARY KEY,
-    date        DATE NOT NULL,
-    symbol      VARCHAR(10) NOT NULL,
-    ma_7        NUMERIC(12, 4),
-    ma_21       NUMERIC(12, 4),
-    rsi_14      NUMERIC(8, 4),
-    daily_return NUMERIC(10, 6), 
-    volatility_7 NUMERIC(10, 6), -- for risk analysis
-    target      NUMERIC(12, 4), -- Next day's close
-    UNIQUE (date, symbol)
+    id           SERIAL PRIMARY KEY,
+    date         DATE NOT NULL,
+    symbol       VARCHAR(10) NOT NULL,
+    ma_7         NUMERIC(12, 4),
+    ma_21        NUMERIC(12, 4),
+    rsi_14       NUMERIC(8, 4) CHECK (rsi_14 BETWEEN 0 AND 100),
+    daily_return NUMERIC(10, 6),
+    volatility_7 NUMERIC(10, 6) CHECK (volatility_7 >= 0),
+    target       NUMERIC(12, 4) CHECK (target > 0),
+    UNIQUE (date, symbol),
+    FOREIGN KEY (date, symbol) REFERENCES prices (date, symbol)
+        ON DELETE CASCADE    -- if raw price row deleted, feature row goes too
 );
 
--- 3. GOVERNANCE LAYER (MLOps: Registry & Performance)
+-- 3. GOVERNANCE LAYER
 CREATE TABLE IF NOT EXISTS model_registry (
     id            SERIAL PRIMARY KEY,
-    model_version VARCHAR(50) NOT NULL,
+    model_version VARCHAR(50) NOT NULL UNIQUE,
     symbol        VARCHAR(10) NOT NULL,
-    rmse          NUMERIC(10, 6),
-    mae           NUMERIC(10, 6),
-    r2            NUMERIC(6, 4),
+    rmse          NUMERIC(10, 6) CHECK (rmse >= 0),
+    mae           NUMERIC(10, 6) CHECK (mae >= 0),
+    r2            NUMERIC(6, 4) CHECK (r2 BETWEEN -1 AND 1),
     is_champion   BOOLEAN DEFAULT FALSE,
     trained_at    TIMESTAMPTZ DEFAULT NOW(),
-    model_path    TEXT -- e.g., /app/models/xgboost_v1.bin
+    trained_on_data_until DATE,
+    model_path    TEXT
 );
 
--- 4. SERVING LAYER (Predictions for Dashboard)
+-- 4. SERVING LAYER
 CREATE TABLE IF NOT EXISTS predictions (
     id              SERIAL PRIMARY KEY,
     date            DATE NOT NULL,
     symbol          VARCHAR(10) NOT NULL,
-    predicted_close NUMERIC(12, 4),
-    actual_close    NUMERIC(12, 4), -- Updated by pipeline after market close
+    predicted_close NUMERIC(12, 4) CHECK (predicted_close > 0),
+    actual_close    NUMERIC(12, 4) CHECK (actual_close > 0),
     model_version   VARCHAR(50),
     predicted_at    TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (date, symbol)
+    UNIQUE (date, symbol),
+    FOREIGN KEY (model_version) REFERENCES model_registry (model_version)
+        ON DELETE SET NULL   -- if model deleted, prediction stays but loses version ref
 );
