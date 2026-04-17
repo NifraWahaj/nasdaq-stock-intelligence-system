@@ -28,10 +28,9 @@ docker-compose up --build
 ```
 
 **Service Endpoints:**
-* **Database:** `localhost:5432` (PostgreSQL 15)
 * **API:** `http://localhost:8000` (FastAPI + Swagger Docs)
 * **Dashboard:** `http://localhost:8501` (Streamlit)
-
+* **Prefect Dashboard:** `http://localhost:4200`
 ---
 
 ## Project Structure
@@ -39,7 +38,7 @@ docker-compose up --build
 ```text
 nasdaq-intelligence/
 ├── ingestion/
-s    ├── fetcher.py       # yfinance calls, returns clean DataFrames
+    ├── fetcher.py       # yfinance calls, returns clean DataFrames
     ├── loader.py        # writes DataFrames to PostgreSQL
     └── pipeline.py      # Prefect flow wiring fetcher → loader
 ├── processing/           # Feature engineering & validation (Great Expectations)
