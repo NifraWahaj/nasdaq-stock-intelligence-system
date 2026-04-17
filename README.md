@@ -77,7 +77,7 @@ You can inspect the database tables and data using either a GUI app or the termi
 Download [DBeaver](https://dbeaver.io/) or [TablePlus](https://tableplus.com/). Use the credentials defined in your .env file:
 
 * **Host:** `localhost`
-* **Port:** `5432`
+* **Port:** `5433`
 * **Database:** `${POSTGRES_DB}`
 * **User:** `${POSTGRES_USER}`
 * **Password:** `${POSTGRES_PASSWORD}`
@@ -89,3 +89,29 @@ You can access the database directly from your terminal using docker exec. Repla
 docker exec -it nasdaq-db psql -U <POSTGRES_USER> -d <POSTGRES_DB>
 ```
 ---
+
+## 4. Prefect Workflow Orchestration
+We use Prefect to schedule and monitor our data pipelines.
+
+### 1. Accessing the Dashboard
+Once your Docker containers are running, navigate to: `http://localhost:4200`
+
+This dashboard allows you to track the history of every pipeline run, view logs for individual tasks, and debug failures visually.
+
+### 2. Triggering a Manual Run
+The system is set up using a Worker/Deployment model. The nasdaq-pipeline container stays active and waits for instructions.
+
+In the Prefect UI, go to the Deployments tab.
+
+Find nasdaq-manual-deployment (under the nasdaq-master-pipeline flow).
+
+Click the Run button (Quick Run) to start the ingestion and processing loop.
+
+### 3. Monitoring & Debugging
+If a pipeline run fails (turns red in the UI):
+
+Inspect Tasks: Click on the failed run to see exactly which task failed (e.g., fetch_ticker_data).
+
+View Logs: The UI captures all Python print statements and errors. You can filter logs by "Level" (Info/Error) to find the root cause.
+
+Retries: We have configured the system to automatically retry failed API calls. You will see these attempts logged in the task history.
