@@ -33,6 +33,7 @@ services:
 
   pipeline:
     build: .
+    image: nasdaq-app-base:latest
     container_name: nasdaq-pipeline
     command: python orchestration/flows.py
     env_file: .env
@@ -50,6 +51,7 @@ services:
 
   api:
     build: .
+    image: nasdaq-app-base:latest
     container_name: nasdaq-api
     command: uvicorn serving.api:app --host 0.0.0.0 --port 8000 --reload
     env_file: .env
@@ -64,6 +66,7 @@ services:
 
   dashboard:
     build: .
+    image: nasdaq-app-base:latest
     container_name: nasdaq-dashboard
     command: streamlit run serving/dashboard.py --server.port 8501 --server.address 0.0.0.0
     env_file: .env
