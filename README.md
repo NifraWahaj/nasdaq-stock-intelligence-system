@@ -37,26 +37,33 @@ docker-compose up --build
 
 ```text
 nasdaq-intelligence/
-├── ingestion/
-    ├── fetcher.py        # yfinance calls, returns clean DataFrames
-    ├── loader.py         # writes DataFrames to PostgreSQL
-    └── pipeline.py       # Prefect flow wiring fetcher → loader
-├── processing/           # Feature engineering & validation (Great Expectations)
-processing/
-    ├── cleaner.py        # missing values, types, duplicates, outliers
-    ├── features.py       # compute MA7, MA21, RSI, daily_return, volatility_7
-    ├── validation.py     # Great Expectations suite on prices
-    └── pipeline.py       # Prefect flow wiring all of the above
-├── storage/              # Database schemas & SQLAlchemy helpers
-├── ml/                   # Model training, evaluation, registry
-├── orchestration/        # Prefect flows & scheduling
-    ├── flows.py 
-├── serving/              # FastAPI backend & Streamlit dashboard
-├── monitoring/           # Structured logging (JSON)
-├── docker-compose.yml    # Multi-container setup
-├── Dockerfile            # Python environment definition
-├── .env                  # Local credentials (DO NOT COMMIT)
-└── requirements.txt      # Python dependencies
+├── gx/                       # Great Expectations (GE) configuration
+│   ├── checkpoints/          # Checkpoint definitions for validation runs
+│   ├── expectations/         # The "prices_suite.json" (Auto-generated)
+│   ├── uncommitted/          # Local validation results & HTML Data Docs
+│   └── create_suite.py       # Script to define/update rules
+├── ingestion/                # Extraction & Loading (EL)
+│   ├── fetcher.py            # API calls (yfinance) + local cleaning
+│   ├── loader.py             # PostgreSQL interaction (SQLAlchemy/psycopg2)
+│   └── pipeline.py           # Prefect flow: fetcher → loader
+├── processing/               # Transformation & Validation
+│   ├── features.py           # Feature engineering
+│   ├── validation.py         # GE Checkpoint execution logic
+│   └── pipeline.py           # Prefect flow: validation → feature engineering
+├── orchestration/            # Centralized Workflow Management
+│   └── flows.py              # Master pipeline: setup → ingestion → processing
+├── storage/                  # Database Layer
+│   ├── db.py                 # Connection pooling and engine setup
+│   └── schema.sql            # Table definitions 
+├── ml/                       # Machine Learning Lifecycle
+├── serving/                  # Output Layer
+│   ├── api/                  # FastAPI backend for data access
+│   └── dashboard/            # Streamlit UI for stock visualization
+├── Dockerfile                # Environment definition
+├── docker-compose.yml        # Multi-container orchestration (DB, API, Prefect)
+├── requirements.txt          # Python dependencies
+├── TODO.md                   # Pending tasks
+└── .env                      # Local credentials (DO NOT COMMIT)
 ```
 
 ## Docker Cheat Sheet
