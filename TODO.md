@@ -19,8 +19,21 @@ Upgrade the ingestion pipeline with strict validation before `prices` insertion.
 
 ---
 
-**Task 2.0:** Strengthen `prices` Cleaning Rules  
-**Owner:** `[]` | **Start:** `2024-05-23` | **Status:**  *Pending*
+**Task 2.0: Expand Great Expectations Suite** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
 
+Implement comprehensive data quality gates using the Great Expectations framework.
+* **Target File:** `gx/create_suite.py`
+* **Target Function:** `create_nasdaq_suite()`
+* **Current State:** Basic boilerplate with only a `not_null` check on `close`.
 
+- [ ] **2.1 Schema Enforcement:** Validate column existence and data types (e.g., `ticker` as string, `volume` as integer).
+- [ ] **2.2 Range & Boundary Checks:** Define realistic bounds for prices, volumes, and date ranges.
+- [ ] **2.3 Statistical Sanity:** (Optional) Implement expectations for row counts or mean price shifts to catch ingestion gaps.
+- [ ] **2.4 Relationship Validation:** Check for cross-column logic (e.g., `high >= low`).
+- [ ] **2.5 Set Membership:** Verify that `ticker` values belong to the expected NASDAQ universe.
+- [ ] **2.6 Uniqueness Constraints:** Enforce strict uniqueness on the primary key pair `(date, symbol)`.
+- [ ] **2.7 Open Discovery:** *Identify and implement additional expectations based on exploratory data analysis (EDA)*
+- [ ] **2.8 Documentation:** Ensure all new rules include clear failure messages for the Prefect logs.
+  
 ---
+**Task 3.0: ML Model** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
