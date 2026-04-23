@@ -38,13 +38,19 @@ docker-compose up --build
 ```text
 nasdaq-intelligence/
 ├── ingestion/
-    ├── fetcher.py       # yfinance calls, returns clean DataFrames
-    ├── loader.py        # writes DataFrames to PostgreSQL
-    └── pipeline.py      # Prefect flow wiring fetcher → loader
+    ├── fetcher.py        # yfinance calls, returns clean DataFrames
+    ├── loader.py         # writes DataFrames to PostgreSQL
+    └── pipeline.py       # Prefect flow wiring fetcher → loader
 ├── processing/           # Feature engineering & validation (Great Expectations)
+processing/
+    ├── cleaner.py        # missing values, types, duplicates, outliers
+    ├── features.py       # compute MA7, MA21, RSI, daily_return, volatility_7
+    ├── validation.py     # Great Expectations suite on prices
+    └── pipeline.py       # Prefect flow wiring all of the above
 ├── storage/              # Database schemas & SQLAlchemy helpers
 ├── ml/                   # Model training, evaluation, registry
 ├── orchestration/        # Prefect flows & scheduling
+    ├── flows.py 
 ├── serving/              # FastAPI backend & Streamlit dashboard
 ├── monitoring/           # Structured logging (JSON)
 ├── docker-compose.yml    # Multi-container setup
