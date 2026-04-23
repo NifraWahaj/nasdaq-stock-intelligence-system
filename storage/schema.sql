@@ -1,4 +1,21 @@
 -- storage/schema.sql
+
+-- 0. TRUE RAW LAYER (append-only, never modified, audit trail)
+CREATE TABLE IF NOT EXISTS raw_prices (
+    id          SERIAL PRIMARY KEY,
+    symbol      VARCHAR(10),
+    date        DATE,
+    open        NUMERIC,        -- no precision constraints
+    high        NUMERIC,
+    low         NUMERIC,
+    close       NUMERIC,
+    volume      NUMERIC,        -- NUMERIC not BIGINT, accepts anything yfinance returns
+    ingested_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1. RAW DATA LAYER (cleaned, constrained — your existing prices table)
+-- ... rest unchanged
+
 -- 1. RAW DATA LAYER
 CREATE TABLE IF NOT EXISTS prices (
     id          SERIAL PRIMARY KEY,
