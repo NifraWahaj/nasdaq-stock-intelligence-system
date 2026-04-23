@@ -1,3 +1,4 @@
+-- storage/schema.sql
 -- 1. RAW DATA LAYER
 CREATE TABLE IF NOT EXISTS prices (
     id          SERIAL PRIMARY KEY,
@@ -22,9 +23,9 @@ CREATE TABLE IF NOT EXISTS features (
     symbol       VARCHAR(10) NOT NULL,
     ma_7         NUMERIC(12, 4),
     ma_21        NUMERIC(12, 4),
-    rsi_14       NUMERIC(8, 4) CHECK (rsi_14 BETWEEN 0 AND 100),
+    rsi_14       NUMERIC,
     daily_return NUMERIC(10, 6),
-    volatility_7 NUMERIC(10, 6) CHECK (volatility_7 >= 0),
+    volatility_7 NUMERIC(10, 6),
     target       NUMERIC(12, 4) CHECK (target > 0),
     UNIQUE (date, symbol),
     FOREIGN KEY (date, symbol) REFERENCES prices (date, symbol)
