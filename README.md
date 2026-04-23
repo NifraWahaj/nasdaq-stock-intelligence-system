@@ -121,3 +121,33 @@ Inspect Tasks: Click on the failed run to see exactly which task failed (e.g., f
 View Logs: The UI captures all Python print statements and errors. You can filter logs by "Level" (Info/Error) to find the root cause.
 
 Retries: We have configured the system to automatically retry failed API calls. You will see these attempts logged in the task history.
+
+---
+## 5. Great Expectations
+We use Great Expectations (GE) to validate the prices table before processing.
+If validation fails, the pipeline stops.
+### Where it is defined
+Expectation suite: gx/expectations/prices_suite.json
+Checkpoint config: gx/checkpoints/prices_checkpoint.yml
+Execution logic: processing/validation.py
+
+### How to add a rule:
+1.  Open `gx/create_suite.py`.
+2.  Locate the `# --- DEFINE EXPECTATIONS ---` section.
+3.  Add your new rules using the `validator` object:
+```python
+    # Example: Check for specific ticker formats
+    validator.expect_column_values_to_match_regex("ticker", r"^[A-Z]{1,5}$")
+```
+
+4.  **Important:** After updating the code, you must delete the old JSON file to let the automation recreate it, or run the script manually:
+    ```bash
+        docker exec -it nasdaq-pipeline python gx/create_suite.py
+    ```
+
+### Viewing Validation Reports (Data Docs)
+GE generates visual HTML reports for every run. To view them, navigate to `gx/uncommitted/data_docs/local_site/index.html`
+
+
+## Troubleshooting
+* **Empty Suite:** If the `.json` file is empty, delete it and restart the pipeline; the `initialise-ge-suite` task will rebuild it.
