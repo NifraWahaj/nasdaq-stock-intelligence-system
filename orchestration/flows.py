@@ -3,9 +3,13 @@ from prefect import flow
 from ingestion.pipeline import ingestion_flow
 from prefect.client.schemas.schedules import CronSchedule
 from processing.pipeline import processing_flow
+from storage.db import init_db
 
 @flow(name="nasdaq-master-pipeline")
 def master_pipeline():
+    # SETUP: Ensure tables exist before running logic
+    init_db()
+    
     # Stage 1: Ingestion (done)
     ingestion_flow()
     
