@@ -1,0 +1,26 @@
+# great_expectations/checkpoints/prices_checkpoint.yml
+name: prices_checkpoint
+config_version: 1.0
+class_name: Checkpoint
+module_name: great_expectations.checkpoint
+
+validations:
+  - batch_request:
+      datasource_name: nasdaq_postgres
+      data_connector_name: default_runtime_data_connector
+      data_asset_name: prices
+      runtime_parameters:
+        query: "SELECT * FROM prices"
+      batch_identifiers:
+        default_identifier_name: prices_full_table
+    expectation_suite_name: prices_suite
+
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+
+run_name_template: "%Y%m%d-%H%M%S-prices-validation"

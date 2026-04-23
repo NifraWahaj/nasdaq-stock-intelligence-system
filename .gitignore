@@ -19,3 +19,5 @@ prefect.db
 
 # OS specific
 .DS_Store
+
+great_expectations/uncommitted/
