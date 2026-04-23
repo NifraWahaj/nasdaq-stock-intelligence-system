@@ -26,10 +26,11 @@ services:
     ports:
       - "4200:4200"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health')"]
+      test: ["CMD", "python", "-c", "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect(('127.0.0.1', 4200))"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 15s
 
   pipeline:
     build: .
@@ -63,6 +64,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      prefect:
+        condition: service_healthy
 
   dashboard:
     build: .
@@ -76,6 +79,8 @@ services:
       - .:/app
     depends_on:
       db:
+        condition: service_healthy
+      prefect:
         condition: service_healthy
 
 volumes:
