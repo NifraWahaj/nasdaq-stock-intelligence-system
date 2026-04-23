@@ -1,6 +1,8 @@
+# ingestion/fetcher.py
 import logging
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime 
 import pandas as pd
+import pytz
 import yfinance as yf
 from sqlalchemy import text
 from storage.db import engine
@@ -80,8 +82,12 @@ def fetch_all(tickers: list[str] = TICKERS) -> pd.DataFrame:
     - Known ticker: pulls only rows after the latest date in DB
     Returns a single concatenated DataFrame for all tickers.
     """
+    # Use New York time to determine "today"
+    tz = pytz.timezone("America/New_York")
+    today = datetime.now(tz).date()
+
     latest_dates = get_latest_date_per_ticker()
-    today = date.today()
+    # today = date.today()
     frames = []
 
     for symbol in tickers:
