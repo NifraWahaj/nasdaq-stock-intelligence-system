@@ -127,9 +127,9 @@ Retries: We have configured the system to automatically retry failed API calls. 
 We use Great Expectations (GE) to validate the prices table before processing.
 If validation fails, the pipeline stops.
 ### Where it is defined
-Expectation suite: gx/expectations/prices_suite.json
-Checkpoint config: gx/checkpoints/prices_checkpoint.yml
-Execution logic: processing/validation.py
+* **Expectation suite:** gx/expectations/prices_suite.json
+* **Checkpoint config:** gx/checkpoints/prices_checkpoint.yml
+* **Execution logic:** processing/validation.py
 
 ### How to add a rule:
 1.  Open `gx/create_suite.py`.
@@ -141,13 +141,12 @@ Execution logic: processing/validation.py
 ```
 
 4.  **Important:** After updating the code, you must delete the old JSON file to let the automation recreate it, or run the script manually:
-    ```bash
-        docker exec -it nasdaq-pipeline python gx/create_suite.py
-    ```
+```bash
+        docker exec -it nasdaq-pipeline python gx/create_suite.py    
+```
 
 ### Viewing Validation Reports (Data Docs)
 GE generates visual HTML reports for every run. To view them, navigate to `gx/uncommitted/data_docs/local_site/index.html`
 
-
-## Troubleshooting
+### Troubleshooting
 * **Empty Suite:** If the `.json` file is empty, delete it and restart the pipeline; the `initialise-ge-suite` task will rebuild it.
