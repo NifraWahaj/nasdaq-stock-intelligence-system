@@ -21,9 +21,8 @@ def init_db():
     schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
     with open(schema_path, "r") as f:
         schema_sql = f.read()
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         conn.execute(text(schema_sql))
-        conn.commit()
     print("Database initialised.")
 
 def test_connection():
