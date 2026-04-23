@@ -1,6 +1,8 @@
+#orchestration/flows.py
 from prefect import flow
 from ingestion.pipeline import ingestion_flow
 from prefect.client.schemas.schedules import CronSchedule
+from processing.pipeline import processing_flow
 
 @flow(name="nasdaq-master-pipeline")
 def master_pipeline():
@@ -8,7 +10,7 @@ def master_pipeline():
     ingestion_flow()
     
     # Stage 2: Feature engineering
-    # processing_flow()
+    processing_flow()
     
     # Stage 3: ML training + champion/challenger 
     # ml_flow()
@@ -17,12 +19,13 @@ def master_pipeline():
     # prediction_flow()
 
 if __name__ == "__main__":
-    # This turns the script into a permanent 'worker' 
-    # that creates a Deployment in the UI
+    # 1. Trigger an immediate run in the background (Optional but helpful)
+    # master_pipeline() 
+
+    # 2. Start the permanent server/worker
     master_pipeline.serve(
         name="nasdaq-manual-deployment",
         tags=["dev", "nasdaq"],
         description="Manual trigger for the full Nasdaq pipeline",
-        # Optional: Add a schedule here if you want it to run every morning
-        # schedule=CronSchedule(cron="0 9 * * 1-5") 
+        schedule=CronSchedule(cron="30 17 * * 1-5", timezone="America/New_York") # runs at 5:30 PM New York time
     )

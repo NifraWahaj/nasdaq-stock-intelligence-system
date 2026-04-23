@@ -1,62 +1,39 @@
-import logging
-from prefect import flow, task
-from prefect.tasks import task_input_hash
-from datetime import timedelta
-
+# ingestion/pipeline.py
+from prefect import flow, task, get_run_logger
 from ingestion.fetcher import fetch_all, TICKERS
 from ingestion.loader import load_prices
 from storage.db import init_db
 
-logger = logging.getLogger(__name__)
 
-
-@task(
-    name="initialise-database",
-    retries=3,
-    retry_delay_seconds=10
-)
+@task
 def task_init_db():
-    """Ensure all tables exist before doing anything else."""
     init_db()
 
 
-@task(
-    name="fetch-stock-data",
-    retries=3,
-    retry_delay_seconds=30,
-    cache_key_fn=task_input_hash,
-    cache_expiration=timedelta(hours=1)
-)
-def task_fetch(tickers: list[str]):
-    df = fetch_all(tickers)
-    logger.info(f"Fetch task returned {len(df)} rows")
-    return df
+@task
+def task_fetch(tickers):
+    return fetch_all(tickers)
 
 
-@task(
-    name="load-to-database",
-    retries=2,
-    retry_delay_seconds=15
-)
+@task
 def task_load(df):
-    summary = load_prices(df)
-    return summary
+    return load_prices(df)
 
 
-@flow(
-    name="nasdaq-ingestion-pipeline",
-    description="Daily ingestion of NASDAQ OHLCV data for 10 tickers."
-)
-def ingestion_flow(tickers: list[str] = TICKERS):
+@flow(name="nasdaq-ingestion-pipeline")
+def ingestion_flow():
+
+    logger = get_run_logger()
+
     task_init_db()
-    df = task_fetch(tickers)
+
+    df = task_fetch(TICKERS)
+
     if df.empty:
-        logger.info("No new data to load.")
+        logger.info("No new data")
         return {"inserted": 0, "skipped": 0}
-    summary = task_load(df)
-    logger.info(f"Ingestion flow complete: {summary}")
-    return summary
 
+    result = task_load(df)
 
-if __name__ == "__main__":
-    ingestion_flow()
+    logger.info(f"Done: {result}")
+    return result
