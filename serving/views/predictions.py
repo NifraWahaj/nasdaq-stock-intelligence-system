@@ -26,7 +26,12 @@ def render():
                 prediction_vs_actual(pred_df, symbol),
                 use_container_width=True
             )
-
+    # Filter by date range
+    if not pred_df.empty:
+        pred_df["date"] = pd.to_datetime(pred_df["date"])
+        cutoff  = pd.Timestamp.today() - pd.Timedelta(days=days)
+        pred_df = pred_df[pred_df["date"] >= cutoff]
+        
     st.divider()
     st.subheader("Accuracy by Ticker")
 
