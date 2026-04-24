@@ -1,7 +1,7 @@
 # ingestion/fetcher.py
 import logging
 from datetime import date, timedelta, datetime
-from time import time
+import time
 import pandas as pd
 import pytz
 import yfinance as yf
@@ -67,6 +67,9 @@ def fetch_ticker_raw(symbol: str, start: date, end: date) -> pd.DataFrame:
         - No cleaning, filtering, or rounding is applied
         - Output is intended for audit storage (raw_prices)
         - Uses auto_adjust=True to account for splits/dividends
+        - Authentication: yfinance uses Yahoo Finance public endpoints
+        - No API key required. Rate limiting handled via 0.5s inter-request delay.
+        - Pagination: yfinance handles date-range chunking internally.
     """
     logger.info(f"Fetching {symbol} from {start} to {end}")
     try:
