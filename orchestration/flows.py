@@ -10,7 +10,7 @@ from storage.db import init_db
 def task_init_db():
     init_db()
 
-@task(name="initialise-ge-suite")
+@task(name="initialise-ge-suite", retries=2, retry_delay_seconds=10)
 def task_init_ge():
     """
     Ensures Great Expectations suite exists.
