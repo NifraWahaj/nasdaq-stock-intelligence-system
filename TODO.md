@@ -37,3 +37,46 @@ Implement comprehensive data quality gates using the Great Expectations framewor
   
 ---
 **Task 3.0: ML Model** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+
+---
+**Task 4.0: Streamlit Dashboard** **Owner:** `[Nifra]` | **Start:** `2026-04-23` | **Status:** *In Progress*
+
+---
+**Task 5.0: Logging & Monitoring** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+
+---
+**Task 6.0: Production-grade Model Deployment(versioning, drift detection, advanced monitoring)** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+
+---
+**Task 7.0: Pipeline Orchestration** **Owner:** `[Nifra]` | **Start:** `2026-04-23` | **Status:** *In Progress*
+
+
+---
+**Task 8.0: Project Documentation** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+* maximum 3 pages
+* Team Details: Roll numbers and 1-2 line contributions of each member
+* Project Description: Title, goal, dataset, and domain/theme (1-2 paragraphs)
+* Architecture Diagram: Use draw.io or similar
+* Schema Diagram: Show data models and relationships
+* Pipeline Explanation: Brief overview of each stage with tool justification
+* Deployment Link: Link to deployed demo/interface (if publicly accessible)
+* Repository: GitHub link to your repo/folder
+* AI Usage Disclosure: Clearly specify use of AI in documentation (mandatory for visibility and judging)
+* AI Usage Declaration Format1 
+   AI Usage Declaration2 
+   - Tool : ChatGPT3 
+   - Used for : Debugging syntax errors in FastAPI routes , understanding Airflow concepts4 
+   - Extent : No code generation , only debugging assistance
+
+
+
+---
+**Task 9.0: Demo (Video File)** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+* *Duration: 1-2 minutes (strict maximum)
+* Content: Must show:
+* – Pipeline execution (triggering the pipeline and observing it run)
+* – System output (API calls with responses OR dashboard interactions)
+* – Architecture explanation (walk through your design)
+* – Code walkthrough (brief explanation of key components)
+* Format: Voice over recommended
+
