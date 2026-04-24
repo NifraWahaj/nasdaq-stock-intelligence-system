@@ -1,3 +1,4 @@
+# serving/views/monitoring.py
 import streamlit as st
 from serving.components.db import get_monitoring_logs
 from serving.components.charts import mae_trend_chart

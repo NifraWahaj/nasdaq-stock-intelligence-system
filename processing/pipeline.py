@@ -8,6 +8,12 @@ from processing.validation import run_validation
 
 logger = logging.getLogger(__name__)
 
+"""
+Processing pipeline:
+1. Validate prices (Great Expectations)
+2. Engineer features
+3. Load features
+"""
 
 @task(name="validate-prices", retries=1, retry_delay_seconds=10)
 def task_validate():

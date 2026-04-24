@@ -4,6 +4,10 @@ import great_expectations as gx
 
 logger = logging.getLogger(__name__)
 
+"""
+Great Expectations validation for prices table.
+Fails pipeline if expectations are not met.
+"""
 
 def run_validation():
     context = gx.get_context(context_root_dir="/app/gx")

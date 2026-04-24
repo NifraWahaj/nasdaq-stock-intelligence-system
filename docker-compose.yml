@@ -1,3 +1,9 @@
+# Multi-container setup:
+# db        → PostgreSQL storage
+# prefect   → orchestration UI + API
+# pipeline  → runs ingestion + processing flows
+# dashboard → Streamlit UI
+
 version: "3.9"
 services:
   db:
@@ -32,6 +38,7 @@ services:
       start_period: 15s
 
   pipeline:
+  # Runs Prefect flows (ingestion → processing → ML)
     build: .
     image: nasdaq-app-base:latest
     container_name: nasdaq-pipeline
@@ -50,6 +57,7 @@ services:
         condition: service_healthy   # wait for Prefect before running flows
 
   dashboard:
+  # Streamlit UI for viewing prices, features, predictions
     build: .
     image: nasdaq-app-base:latest
     container_name: nasdaq-dashboard

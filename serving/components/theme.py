@@ -1,4 +1,4 @@
-# color palette + styling constants
+# serving/components/theme.py
 
 NASDAQ_BLUE    = "#0066CC"
 NASDAQ_DARK    = "#001F5B"

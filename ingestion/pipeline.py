@@ -7,6 +7,20 @@ from storage.db import init_db
 
 logger = logging.getLogger(__name__)
 
+"""
+Prefect ingestion pipeline.
+
+Flow:
+    1. Initialize database schema
+    2. Fetch raw + cleaned data
+    3. Load raw data (audit)
+    4. Load cleaned data (production)
+
+Key Properties:
+    - Idempotent (safe to re-run)
+    - Fault-tolerant (retries configured per task)
+    - Incremental ingestion per ticker
+"""
 
 @task(name="initialise-database", retries=3, retry_delay_seconds=10)
 def task_init_db():

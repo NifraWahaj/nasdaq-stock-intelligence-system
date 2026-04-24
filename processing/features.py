@@ -9,34 +9,39 @@ from storage.db import engine
 logger = logging.getLogger(__name__)
 
 """
-Transformation logic and assumptions
-─────────────────────────────────────
-Input:  prices table (typed, clean, constrained by ingestion layer)
-Output: features table (engineered indicators + ML target)
+Feature engineering for stock time-series.
 
-Feature assumptions:
-- MA7 / MA21:  min_periods=1 so early rows use partial windows rather
-               than producing NaN. Accepted tradeoff for time-series
-               continuity.
-- RSI(14):     Wilder's EMA method. NaN for first ~14 rows per ticker —
-               these are dropped via dropna(subset=['target']) anyway.
-- daily_return: pct_change(), first row per ticker filled with 0.
-                Rationale: raw OHLCV has 0.81-0.94 inter-correlation
-                (confirmed by EDA). Returns are stationary and remove
-                multicollinearity.
-- volatility_7: rolling std of daily_return, min_periods=2.
-                Always >= 0 by definition.
-- target:       close.shift(-1) per ticker = next trading day's close.
-                Last row per ticker is always dropped (no next day yet).
+Input:  prices table
+Output: features table
+
+Features:
+- MA7 / MA21:
+  Rolling mean with min_periods=1 → early rows use partial windows (no NaNs).
+
+- RSI(14):
+  Wilder's EMA method → NaN for first ~14 rows per ticker.
+
+- daily_return:
+  pct_change(); first row filled with 0.
+  Used to reduce non-stationarity and multicollinearity in raw OHLCV.
+
+- volatility_7:
+  Rolling std of daily_return (min_periods=2); always ≥ 0.
+
+- target:
+  close.shift(-1) → next-day close.
+  Last row per ticker dropped (no future value available).
+
+Notes:
+- Partial-window values are allowed (not treated as errors)
 
 Idempotency:
-- Reads from prices (immutable source).
-- Writes with ON CONFLICT (date, symbol) DO NOTHING.
-- Re-running produces identical features table state.
+- Reads from prices (immutable)
+- Writes with ON CONFLICT DO NOTHING
 """
 
-
 def fetch_prices() -> pd.DataFrame:
+    """Load ordered price data for all tickers."""
     with engine.connect() as conn:
         df = pd.read_sql(
             text("SELECT date, symbol, open, high, low, close, volume "
@@ -49,6 +54,7 @@ def fetch_prices() -> pd.DataFrame:
 
 
 def compute_rsi(series: pd.Series, period: int = 14) -> pd.Series:
+    """Compute RSI using Wilder's exponential moving average."""
     delta    = series.diff()
     gain     = delta.clip(lower=0)
     loss     = -delta.clip(upper=0)
@@ -59,6 +65,7 @@ def compute_rsi(series: pd.Series, period: int = 14) -> pd.Series:
 
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Generate technical features + next-day target per ticker."""
     frames = []
 
     for symbol, group in df.groupby("symbol"):
@@ -87,7 +94,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_features(df: pd.DataFrame) -> dict:
-    """Idempotent — ON CONFLICT DO NOTHING."""
+    """Insert features into DB (idempotent via ON CONFLICT)."""
     if df.empty:
         return {"inserted": 0, "skipped": 0}
 

@@ -1,6 +1,13 @@
 -- storage/schema.sql
 
--- 0. TRUE RAW LAYER (append-only, never modified, audit trail)
+-- Schema design:
+-- raw_prices        → append-only audit layer (no constraints)
+-- prices            → cleaned, validated market data
+-- features          → engineered features for ML
+-- model_registry    → model versioning + metrics
+-- predictions       → model outputs + backfilled actuals
+
+-- 0. RAW (immutable audit layer)
 CREATE TABLE IF NOT EXISTS raw_prices (
     id          SERIAL PRIMARY KEY,
     symbol      VARCHAR(10),
@@ -13,7 +20,7 @@ CREATE TABLE IF NOT EXISTS raw_prices (
     ingested_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1. RAW DATA LAYER
+-- 1. CLEANED (validated market data)
 CREATE TABLE IF NOT EXISTS prices (
     id          SERIAL PRIMARY KEY,
     date        DATE NOT NULL,
@@ -43,7 +50,7 @@ CREATE TABLE IF NOT EXISTS features (
     target       NUMERIC(12, 4) CHECK (target > 0),
     UNIQUE (date, symbol),
     FOREIGN KEY (date, symbol) REFERENCES prices (date, symbol)
-        ON DELETE CASCADE    -- if raw price row deleted, feature row goes too
+        ON DELETE CASCADE   -- if price row is deleted, dependent feature rows are removed
 );
 
 -- 3. GOVERNANCE LAYER

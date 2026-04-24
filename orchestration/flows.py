@@ -10,33 +10,42 @@ from storage.db import init_db
 def task_init_db():
     init_db()
 
-
 @task(name="initialise-ge-suite")
 def task_init_ge():
+    """
+    Ensures Great Expectations suite exists.
+    Runs only if suite file is missing or empty.
+    """
     import json
     import os
     from gx.create_suite import create_nasdaq_suite
     
-    suite_path = "/app/gx/expectations/prices_suite.json"
-    
-    # Check if file exists AND if it actually has expectations
-    if os.path.exists(suite_path):
-        with open(suite_path, 'r') as f:
+    # suite_path = "gx/expectations/prices_suite.json"
+    path = "gx/expectations/prices_suite.json"
+
+    if os.path.exists(path):
+        with open(path) as f:
             data = json.load(f)
-            if data.get("expectations"): # If list is not empty
-                return 
-    
-    # If file is missing or empty, run the creation logic
+            if data.get("expectations"):
+                return  # already initialized
+
     create_nasdaq_suite()
 
 
 
 @flow(name="nasdaq-master-pipeline")
 def master_pipeline():
-    # SETUP: Ensure tables exist before running logic
+    """
+    End-to-end pipeline:
+    1. Initialize DB + GE
+    2. Ingest raw + clean data
+    3. Validate + engineer features
+    4. Train ML + generate predictions
+    """
+
+    # SETUP
     task_init_db()
-    
-    task_init_ge() # one-time setup for GE suite
+    task_init_ge() 
     
     # Stage 1: Ingestion 
     ingestion_flow()
@@ -44,7 +53,7 @@ def master_pipeline():
     # Stage 2: Feature engineering
     processing_flow()
     
-    # Stage 3: ML training + champion/challenger 
+    # Stage 3: ML 
     # ml_flow()
     
     # Stage 4: Generate predictions

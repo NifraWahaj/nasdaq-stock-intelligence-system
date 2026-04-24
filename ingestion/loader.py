@@ -6,11 +6,28 @@ from storage.db import engine
 
 logger = logging.getLogger(__name__)
 
+"""
+Data loading module for persisting ingested stock data into PostgreSQL.
+
+Responsibilities:
+- Store raw ingestion data (append-only audit trail)
+- Store cleaned data with idempotent inserts
+
+Design:
+- raw_prices: full history, no deduplication
+- prices: deduplicated, production-ready dataset
+"""
+
 def load_raw(df: pd.DataFrame) -> None:
     """
-    Append-only insert into raw_prices.
-    No conflict handling — we want every fetch attempt recorded.
-    This is the audit trail.
+    Insert raw data into raw_prices table (append-only).
+
+    Args:
+        df (pd.DataFrame): Raw OHLCV data
+
+    Notes:
+        - No deduplication or conflict handling
+        - Preserves full ingestion history for auditing/debugging
     """
     if df.empty:
         return
@@ -26,8 +43,17 @@ def load_raw(df: pd.DataFrame) -> None:
 
 def load_prices(df: pd.DataFrame) -> dict:
     """
-    Insert cleaned rows into prices table.
-    ON CONFLICT DO NOTHING — idempotent.
+    Insert cleaned data into prices table.
+
+    Args:
+        df (pd.DataFrame): Cleaned OHLCV data
+
+    Returns:
+        dict: {"inserted": int, "skipped": int}
+
+    Behavior:
+        - Uses ON CONFLICT DO NOTHING for idempotency
+        - Ensures safe re-runs without duplication
     """
     if df.empty:
         logger.info("Nothing to load.")
