@@ -87,5 +87,5 @@ if __name__ == "__main__":
         name="nasdaq-manual-deployment",
         tags=["dev", "nasdaq"],
         description="Manual trigger for the full Nasdaq pipeline",
-        schedule=CronSchedule(cron="30 17 * * 1-5", timezone="America/New_York") # runs at 5:30 PM New York time
+        schedules=[CronSchedule(cron="30 17 * * 1-5", timezone="America/New_York")] # runs at 5:30 PM New York time
     )
