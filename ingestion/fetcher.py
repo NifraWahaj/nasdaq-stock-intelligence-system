@@ -1,6 +1,7 @@
 # ingestion/fetcher.py
 import logging
 from datetime import date, timedelta, datetime
+from time import time
 import pandas as pd
 import pytz
 import yfinance as yf
@@ -166,6 +167,8 @@ def fetch_all_raw(tickers: list[str] = TICKERS) -> tuple[pd.DataFrame, pd.DataFr
             continue
 
         raw_df = fetch_ticker_raw(symbol, start, today)
+        time.sleep(0.5)  # avoid Yahoo Finance throttling
+
         if raw_df.empty:
             continue
 
