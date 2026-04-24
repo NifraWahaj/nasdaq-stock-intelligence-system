@@ -2,10 +2,12 @@
 import streamlit as st
 from serving.components.theme import PAGE_CONFIG, inject_css
 from serving.views import overview, predictions, model, monitoring
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(**PAGE_CONFIG)
 
 inject_css()
+st_autorefresh(interval=5 * 60 * 1000, key="autorefresh")
 
 # Sidebar navigation
 with st.sidebar:

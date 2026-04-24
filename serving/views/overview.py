@@ -19,6 +19,33 @@ def render():
 
     _render_ticker_grid(prices_df)
     st.divider()
+
+    st.subheader("Price History")
+
+    from serving.components.db import get_price_history
+    from serving.components.charts import candlestick_chart
+
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        selected = st.selectbox(
+            "Ticker",
+            ["AAPL","MSFT","NVDA","GOOGL","AMZN",
+             "META","TSLA","INTC","AMD","NFLX"]
+        )
+    with col2:
+        days = st.selectbox(
+            "Time Range",
+            [30, 60, 90, 180],
+            index=1,
+            format_func=lambda x: f"Last {x} days"
+        )
+
+    history = get_price_history(selected, days=days)
+    st.plotly_chart(
+        candlestick_chart(history, selected),
+        use_container_width=True
+    )
+
     _render_correlation(get_daily_returns())
 
 
