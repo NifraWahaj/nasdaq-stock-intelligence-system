@@ -1,10 +1,16 @@
 #orchestration/flows.py
+import logging
 from prefect import flow, task
 from ingestion.pipeline import ingestion_flow
 from prefect.client.schemas.schedules import CronSchedule
 from ml.pipeline import ml_flow
 from processing.pipeline import processing_flow
 from storage.db import init_db
+
+from monitoring.logger import setup_logging
+setup_logging()
+logger = logging.getLogger(__name__)
+
 
 @task(name="initialise-database", retries=3, retry_delay_seconds=10)
 def task_init_db():
@@ -42,6 +48,7 @@ def master_pipeline():
     3. Validate + engineer features
     4. Train ML + generate predictions
     """
+    logger.info("Master pipeline starting")
 
     # SETUP
     task_init_db()
@@ -62,6 +69,7 @@ def master_pipeline():
     # Advance Extension
     # train_result = ml_flow()
     # task_monitor(train_result)   # runs after ML, uses today's model version
+    logger.info("Master pipeline complete")
 
 if __name__ == "__main__":
     # 1. Trigger an immediate run in the background (Optional but helpful)
