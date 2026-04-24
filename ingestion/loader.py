@@ -31,14 +31,17 @@ def load_raw(df: pd.DataFrame) -> None:
     """
     if df.empty:
         return
-
-    sql = text("""
-        INSERT INTO raw_prices (date, symbol, open, high, low, close, volume)
-        VALUES (:date, :symbol, :open, :high, :low, :close, :volume)
-    """)
-    with engine.begin() as conn:
-        conn.execute(sql, df.to_dict(orient="records"))
-    logger.info(f"Raw load: {len(df)} rows appended to raw_prices")
+    try:
+        sql = text("""
+            INSERT INTO raw_prices (date, symbol, open, high, low, close, volume)
+            VALUES (:date, :symbol, :open, :high, :low, :close, :volume)
+        """)
+        with engine.begin() as conn:
+            conn.execute(sql, df.to_dict(orient="records"))
+        logger.info(f"Raw load: {len(df)} rows appended to raw_prices")
+    except Exception as e:
+        logger.error(f"Failed to load raw data: {e}")
+        raise
 
 
 def load_prices(df: pd.DataFrame) -> dict:
