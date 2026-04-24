@@ -13,9 +13,6 @@ CREATE TABLE IF NOT EXISTS raw_prices (
     ingested_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1. RAW DATA LAYER (cleaned, constrained — your existing prices table)
--- ... rest unchanged
-
 -- 1. RAW DATA LAYER
 CREATE TABLE IF NOT EXISTS prices (
     id          SERIAL PRIMARY KEY,

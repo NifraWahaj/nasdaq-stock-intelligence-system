@@ -28,8 +28,7 @@ docker-compose up --build
 ```
 
 **Service Endpoints:**
-* **API:** `http://localhost:8000` (FastAPI + Swagger Docs)
-* **Dashboard:** `http://localhost:8501` (Streamlit)
+* **Streamlit Dashboard:** `http://localhost:8501` 
 * **Prefect Dashboard:** `http://localhost:4200`
 ---
 
@@ -56,9 +55,23 @@ nasdaq-intelligence/
 │   ├── db.py                 # Connection pooling and engine setup
 │   └── schema.sql            # Table definitions 
 ├── ml/                       # Machine Learning Lifecycle
+├── models/
 ├── serving/                  # Output Layer
-│   ├── api/                  # FastAPI backend for data access
-│   └── dashboard/            # Streamlit UI for stock visualization
+│   └── dashboard.py            # Streamlit UI for stock visualization
+├──serving/
+│   ├── dashboard.py          # entry point, just imports and renders pages
+│   ├── views/
+│       ├── overview.py       # market summary, all 10 tickers at a glance
+│       ├── predictions.py    # next-day predictions + actual vs predicted
+│       ├── model.py          # model metrics, SHAP, version history
+│       └── monitoring.py     # drift detection, MAE trends, pipeline health
+└── components/
+│       ├── charts.py         # reusable chart functions
+│       ├── db.py             # all DB queries for dashboard (read-only)
+│       └── theme.py          # colors, styling constants
+│monitoring/
+│    ├── drift.py             # data drift + prediction drift detection
+│    └── monitor.py           # structured monitoring metrics, logged per run
 ├── Dockerfile                # Environment definition
 ├── docker-compose.yml        # Multi-container orchestration (DB, API, Prefect)
 ├── requirements.txt          # Python dependencies
