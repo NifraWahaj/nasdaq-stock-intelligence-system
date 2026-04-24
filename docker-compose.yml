@@ -49,29 +49,14 @@ services:
       prefect:
         condition: service_healthy   # wait for Prefect before running flows
 
-  api:
-    build: .
-    image: nasdaq-app-base:latest
-    container_name: nasdaq-api
-    command: uvicorn serving.api:app --host 0.0.0.0 --port 8000 --reload
-    env_file: .env
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-      - model_store:/app/models
-    depends_on:
-      db:
-        condition: service_healthy
-      prefect:
-        condition: service_healthy
-
   dashboard:
     build: .
     image: nasdaq-app-base:latest
     container_name: nasdaq-dashboard
     command: streamlit run serving/dashboard.py --server.port 8501 --server.address 0.0.0.0
     env_file: .env
+    environment:
+      PYTHONPATH: .
     ports:
       - "8501:8501"
     volumes:
