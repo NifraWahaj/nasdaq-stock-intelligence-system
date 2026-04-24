@@ -6,6 +6,7 @@ from prefect.client.schemas.schedules import CronSchedule
 from ml.pipeline import ml_flow
 from processing.pipeline import processing_flow
 from storage.db import init_db
+from monitoring.monitor import run_monitoring
 
 from monitoring.logger import setup_logging
 setup_logging()
@@ -38,6 +39,11 @@ def task_init_ge():
     create_nasdaq_suite()
 
 
+@task(name="run-monitoring", retries=1, retry_delay_seconds=10)
+def task_monitor(train_result=None):
+    return run_monitoring(
+        model_version=train_result.get("version") if train_result else None
+    )
 
 @flow(name="nasdaq-master-pipeline")
 def master_pipeline():
@@ -65,10 +71,11 @@ def master_pipeline():
     
     # Stage 4: Generate predictions
     # prediction_flow()
-
+    
     # Advance Extension
     # train_result = ml_flow()
     # task_monitor(train_result)   # runs after ML, uses today's model version
+    task_monitor()
     logger.info("Master pipeline complete")
 
 if __name__ == "__main__":

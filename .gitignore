@@ -21,3 +21,6 @@ prefect.db
 .DS_Store
 
 great_expectations/uncommitted/
+
+logs/
+*.log

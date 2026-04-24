@@ -80,3 +80,19 @@ CREATE TABLE IF NOT EXISTS predictions (
     FOREIGN KEY (model_version) REFERENCES model_registry (model_version)
         ON DELETE SET NULL   -- if model deleted, prediction stays but loses version ref
 );
+
+-- 5. MONITORING LAYER
+CREATE TABLE IF NOT EXISTS monitoring_logs (
+    id                SERIAL PRIMARY KEY,
+    run_at            TIMESTAMPTZ DEFAULT NOW(),
+    model_version     VARCHAR(50),
+    mean_error        NUMERIC(10, 6),
+    mae_7d            NUMERIC(10, 6),
+    mae_30d           NUMERIC(10, 6),
+    drift_detected    BOOLEAN DEFAULT FALSE,
+    drift_features    TEXT,
+    drift_score       NUMERIC(10, 6),
+    champion_age_days INTEGER,
+    predictions_made  INTEGER,
+    notes             TEXT
+);

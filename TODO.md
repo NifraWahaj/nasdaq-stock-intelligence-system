@@ -42,7 +42,7 @@ Implement comprehensive data quality gates using the Great Expectations framewor
 **Task 4.0: Streamlit Dashboard** **Owner:** `[Nifra]` | **Start:** `2026-04-23` | **Status:** *In Progress*
 
 ---
-**Task 5.0: Logging & Monitoring** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+**Task 5.0: Logging & Monitoring** **Owner:** `[Nifra]` | **Start:** `2026-04-` | **Status:** *In Progress*
 
 ---
 **Task 6.0: Production-grade Model Deployment(versioning, drift detection, advanced monitoring)** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
