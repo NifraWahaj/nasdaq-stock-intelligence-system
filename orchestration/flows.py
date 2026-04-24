@@ -2,6 +2,7 @@
 from prefect import flow, task
 from ingestion.pipeline import ingestion_flow
 from prefect.client.schemas.schedules import CronSchedule
+from ml.pipeline import ml_flow
 from processing.pipeline import processing_flow
 from storage.db import init_db
 
@@ -48,6 +49,10 @@ def master_pipeline():
     
     # Stage 4: Generate predictions
     # prediction_flow()
+
+    # Advance Extension
+    # train_result = ml_flow()
+    # task_monitor(train_result)   # runs after ML, uses today's model version
 
 if __name__ == "__main__":
     # 1. Trigger an immediate run in the background (Optional but helpful)
