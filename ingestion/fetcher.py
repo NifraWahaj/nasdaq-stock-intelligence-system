@@ -68,32 +68,39 @@ def fetch_ticker_raw(symbol: str, start: date, end: date) -> pd.DataFrame:
         - Uses auto_adjust=True to account for splits/dividends
     """
     logger.info(f"Fetching {symbol} from {start} to {end}")
+    try:
+        raw = yf.download(
+            symbol,
+            start=str(start),
+            end=str(end + timedelta(days=1)),
+            auto_adjust=True,
+            progress=False
+        )
 
-    raw = yf.download(
-        symbol,
-        start=str(start),
-        end=str(end + timedelta(days=1)),
-        auto_adjust=True,
-        progress=False
-    )
+        if raw.empty:
+            logger.warning(f"No data returned for {symbol}")
+            return pd.DataFrame()
 
-    if raw.empty:
-        logger.warning(f"No data returned for {symbol}")
+        raw = raw.reset_index()
+        raw.columns = [c[0] if isinstance(c, tuple) else c for c in raw.columns]
+        raw.columns = [c.lower() for c in raw.columns]
+
+        df = pd.DataFrame({
+            "date":   pd.to_datetime(raw["date"]).dt.date,
+            "symbol": symbol,
+            "open":   raw["open"],
+            "high":   raw["high"],
+            "low":    raw["low"],
+            "close":  raw["close"],
+            "volume": raw["volume"],
+        })
+
+        logger.info(f"Fetched {len(df)} raw rows for {symbol}")
+        return df
+
+    except Exception as e:
+        logger.error(f"Failed to fetch {symbol}: {e}")
         return pd.DataFrame()
-
-    raw = raw.reset_index()
-    raw.columns = [c[0] if isinstance(c, tuple) else c for c in raw.columns]
-    raw.columns = [c.lower() for c in raw.columns]
-
-    return pd.DataFrame({
-        "date":   pd.to_datetime(raw["date"]).dt.date,
-        "symbol": symbol,
-        "open":   raw["open"],
-        "high":   raw["high"],
-        "low":    raw["low"],
-        "close":  raw["close"],
-        "volume": raw["volume"],
-    })
 
 
 def clean_ticker(df: pd.DataFrame) -> pd.DataFrame:

@@ -7,7 +7,8 @@ from sqlalchemy.orm import sessionmaker
 Database connection and initialization utilities.
 Handles engine creation, schema setup, and connection testing.
 """
-
+import logging
+logger = logging.getLogger(__name__)
 # Connection string (Docker overrides this via .env)
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -32,16 +33,16 @@ def init_db():
         schema_sql = f.read()
     with engine.begin() as conn:
         conn.execute(text(schema_sql))
-    print("Database initialised.")
+    logger.info("Database initialised.")
 
 def test_connection():
     """Verify DB connectivity using a simple SELECT 1."""
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        print("Connection successful.")
+        logger.info("Connection successful.")
     except Exception as e:
-        print(f"Connection failed: {e}")
+        logger.error(f"Connection failed: {e}")
 
 if __name__ == "__main__":
     test_connection()
