@@ -27,13 +27,19 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 def init_db():
     """Initialize database schema from schema.sql (idempotent)."""
-
     schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
-    with open(schema_path, "r") as f:
-        schema_sql = f.read()
-    with engine.begin() as conn:
-        conn.execute(text(schema_sql))
-    logger.info("Database initialised.")
+    try:
+        with open(schema_path, "r") as f:
+            schema_sql = f.read()
+        with engine.begin() as conn:
+            conn.execute(text(schema_sql))
+        logger.info("Database initialised.")
+    except FileNotFoundError:
+        logger.error(f"schema.sql not found at {schema_path}")
+        raise
+    except Exception as e:
+        logger.error(f"Database initialisation failed: {e}")
+        raise
 
 def test_connection():
     """Verify DB connectivity using a simple SELECT 1."""
