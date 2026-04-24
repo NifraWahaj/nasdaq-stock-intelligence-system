@@ -29,8 +29,17 @@ def setup_logging() -> None:
     file_handler.setFormatter(JSONFormatter())
 
     # Silence noisy third-party loggers
-    for noisy in ["yfinance", "urllib3", "sqlalchemy.engine",
-                  "prefect", "great_expectations"]:
+    for noisy in [
+        "yfinance",
+        "urllib3",
+        "sqlalchemy.engine",
+        "prefect",
+        "prefect.engine",
+        "prefect.flow_runs",
+        "httpx",
+        "py.warnings",
+        "great_expectations"
+    ]:
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
     logging.basicConfig(
