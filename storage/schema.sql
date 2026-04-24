@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS features (
     symbol       VARCHAR(10) NOT NULL,
     ma_7         NUMERIC(12, 4),
     ma_21        NUMERIC(12, 4),
-    rsi_14       NUMERIC,
+    rsi_14  NUMERIC(8, 4)       CHECK (rsi_14 BETWEEN 0 AND 100),
     daily_return NUMERIC(10, 6),
     volatility_7 NUMERIC(10, 6),
     target       NUMERIC(12, 4) CHECK (target > 0),

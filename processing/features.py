@@ -83,9 +83,9 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         result = g[["date", "symbol", "ma_7", "ma_21", "rsi_14",
                      "daily_return", "volatility_7", "target"]]
 
-        # Only drop rows where target is NaN (last row per ticker)
-        # All other NaNs are legitimate partial-window values
-        result = result.dropna(subset=["target"])
+        # Drop rows where target is NaN (last row per ticker) and where RSI/Volatility haven't warmed up yet.
+        # This ensures we satisfy the PostgreSQL CHECK constraint for RSI (0-100).
+        result = result.dropna(subset=["target", "rsi_14", "volatility_7"])
 
         frames.append(result)
         logger.info(f"{symbol}: {len(result)} feature rows")
