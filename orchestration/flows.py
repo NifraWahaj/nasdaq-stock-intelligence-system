@@ -13,7 +13,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-@task(name="initialise-database", retries=3, retry_delay_seconds=10)
+@task(name="initialise-database-orchestration", retries=3, retry_delay_seconds=10)
 def task_init_db():
     init_db()
 
