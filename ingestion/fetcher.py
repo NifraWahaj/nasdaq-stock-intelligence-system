@@ -8,6 +8,9 @@ import yfinance as yf
 from sqlalchemy import text
 from storage.db import engine
 
+# --- NEW IMPORT (Task 1.0) ---
+from processing.transform import clean_ticker_data
+
 """
 Data ingestion module for fetching and preparing stock price data.
 
@@ -46,9 +49,17 @@ def get_latest_date_per_ticker() -> dict[str, date]:
         FROM prices
         GROUP BY symbol
     """)
-    with engine.connect() as conn:
-        rows = conn.execute(query).fetchall()
-    return {row.symbol: row.latest for row in rows}
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(query)
+            # Ensure we handle cases where the table has no rows yet
+            rows = result.fetchall()
+            if not rows:
+                return {}
+            return {row.symbol: row.latest for row in rows}
+    except Exception as e:
+        logger.warning(f"Could not fetch latest dates (table might be empty): {e}")
+        return {}
 
 
 def fetch_ticker_raw(symbol: str, start: date, end: date) -> pd.DataFrame:
@@ -100,39 +111,42 @@ def fetch_ticker_raw(symbol: str, start: date, end: date) -> pd.DataFrame:
         })
 
         logger.info(f"Fetched {len(df)} raw rows for {symbol}")
+     
         return df
-
     except Exception as e:
         logger.error(f"Failed to fetch {symbol}: {e}")
         return pd.DataFrame()
 
+# NOTE: The old 'clean_ticker' function has been removed. 
+# We now use 'clean_ticker_data' from processing.transform.
 
-def clean_ticker(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Apply minimal cleaning to raw ticker data for downstream use.
 
-    Args:
-        df (pd.DataFrame): Raw OHLCV data
+# def clean_ticker(df: pd.DataFrame) -> pd.DataFrame:
+#     """
+#     Apply minimal cleaning to raw ticker data for downstream use.
 
-    Returns:
-        pd.DataFrame: Cleaned dataset suitable for prices table
+#     Args:
+#         df (pd.DataFrame): Raw OHLCV data
 
-    Cleaning Rules:
-        - Convert numeric columns to proper types
-        - Round price fields to 4 decimal places
-        - Remove rows with invalid or missing closing prices
+#     Returns:
+#         pd.DataFrame: Cleaned dataset suitable for prices table
 
-    Design Principle:
-        Only remove definitively invalid data — do not over-clean.
-    """
-    df = df.copy()
-    for col in ["open", "high", "low", "close"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce").round(4)
-    df["volume"] = pd.to_numeric(df["volume"], errors="coerce").astype("Int64")
+#     Cleaning Rules:
+#         - Convert numeric columns to proper types
+#         - Round price fields to 4 decimal places
+#         - Remove rows with invalid or missing closing prices
 
-    # Drop definitive data errors only
-    df = df[df["close"].notna() & (df["close"] > 0)]
-    return df
+#     Design Principle:
+#         Only remove definitively invalid data — do not over-clean.
+#     """
+#     df = df.copy()
+#     for col in ["open", "high", "low", "close"]:
+#         df[col] = pd.to_numeric(df[col], errors="coerce").round(4)
+#     df["volume"] = pd.to_numeric(df["volume"], errors="coerce").astype("Int64")
+
+#     # Drop definitive data errors only
+#     df = df[df["close"].notna() & (df["close"] > 0)]
+#     return df
 
 
 def fetch_all_raw(tickers: list[str] = TICKERS) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -170,16 +184,21 @@ def fetch_all_raw(tickers: list[str] = TICKERS) -> tuple[pd.DataFrame, pd.DataFr
             continue
 
         raw_df = fetch_ticker_raw(symbol, start, today)
-        time.sleep(0.5)  # avoid Yahoo Finance throttling
+        time.sleep(0.5) 
 
         if raw_df.empty:
             continue
 
+        # 1. Append to raw list (Audit Integrity - Task 1.7)
         raw_frames.append(raw_df)
-        clean_frames.append(clean_ticker(raw_df))
+        
+        # 2. Transform and append to clean list (Tasks 1.1 - 1.8)
+        # We pass the raw_df through your new logic
+        validated_df = clean_ticker_data(raw_df)
+        clean_frames.append(validated_df)
 
     raw   = pd.concat(raw_frames,   ignore_index=True) if raw_frames   else pd.DataFrame()
     clean = pd.concat(clean_frames, ignore_index=True) if clean_frames else pd.DataFrame()
 
-    logger.info(f"Fetched {len(raw)} raw rows, {len(clean)} clean rows")
+    logger.info(f"Total: {len(raw)} raw rows fetched | {len(clean)} rows passed validation.")
     return raw, clean
