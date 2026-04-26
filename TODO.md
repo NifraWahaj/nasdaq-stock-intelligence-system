@@ -1,12 +1,14 @@
 # TODO
 
+
 **Task 1.0:** Strengthen `prices` Cleaning Rules  
-**Owner:** `[]` | **Start:** `2024-05-23` | **Status:**  *Pending*
+**Owner:** `[Rubina]` | **Start:** `2024-05-23` | **Status:**  *Pending*
 
 Upgrade the ingestion pipeline with strict validation before `prices` insertion. Maintain `raw_prices` as an immutable audit log.
 *   **Target File:** `ingestion/fetcher.py`
 *   **Target Function:** `clean_ticker(df)`
 *   **Current State:** Only removes NaNs and `close <= 0`.
+
 
 - [ ] **1.1 Null Handling:** Drop row if `open`, `high`, `low`, `close`, or `volume` is NULL.
 - [ ] **1.2 Price Consistency:** Drop if `high < low`, `high < open/close`, or `low > open/close`.
@@ -19,7 +21,7 @@ Upgrade the ingestion pipeline with strict validation before `prices` insertion.
 
 ---
 
-**Task 2.0: Expand Great Expectations Suite** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
+**Task 2.0: Expand Great Expectations Suite** **Owner:** `[Rubina]` | **Start:** `2026-04-` | **Status:** *Pending*
 
 Implement comprehensive data quality gates using the Great Expectations framework.
 * **Target File:** `gx/create_suite.py`
