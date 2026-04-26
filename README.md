@@ -170,3 +170,37 @@ GE generates visual HTML reports for every run. To view them, navigate to `gx/un
 
 ### Troubleshooting
 * **Empty Suite:** If the `.json` file is empty, delete it and restart the pipeline; the `initialise-ge-suite` task will rebuild it.
+
+---
+
+###  Data Ingestion Flow (End-to-End Logic)
+
+The ingestion pipeline follows a structured flow to ensure both **auditability** and **data quality** before production use:
+
+#### 1. Extraction (The API)
+The system uses `yfinance` to fetch raw stock data directly from the web.
+
+#### 2. The Raw Snapshot
+The fetched data is first stored in a temporary in-memory variable (`raw_df`). This represents the unaltered dataset exactly as received from the API.
+
+#### 3. Audit Persistence (Table 1: `raw_prices`)
+The raw data (`raw_df`) is written directly into the `raw_prices` table.  
+This acts as a **“black box recorder”** — preserving all incoming data exactly as it was received.
+
+> Example: If the API returns an invalid value like `-999`, it is still stored here without modification.
+
+#### 4. The Filter (Transformation Layer)
+The same `raw_df` is passed through the transformation logic (`clean_ticker_data()` in `transform.py`), where data quality rules are enforced:
+
+- OHLC values must be positive: `OHLC > 0`
+- Volume must meet minimum threshold: `Volume >= 100`
+- Logical price consistency: `High >= Low`
+
+#### 5. Production Persistence (Table 2: `prices`)
+Only the rows that pass all validation checks are written to the `prices` table.
+
+This ensures that:
+- `raw_prices` = **complete historical record (including bad data)**
+- `prices` = **clean, production-ready dataset**
+
+---
