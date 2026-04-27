@@ -69,7 +69,7 @@ nasdaq-intelligence/
 │       ├── charts.py         # reusable chart functions
 │       ├── db.py             # all DB queries for dashboard (read-only)
 │       └── theme.py          # colors, styling constants
-│monitoring/
+└──monitoring/
 │    ├── drift.py             # data drift + prediction drift detection
 │    └── monitor.py           # structured monitoring metrics, logged per run
 ├── Dockerfile                # Environment definition
@@ -127,20 +127,15 @@ This dashboard allows you to track the history of every pipeline run, view logs 
 ### 2. Triggering a Manual Run
 The system is set up using a Worker/Deployment model. The nasdaq-pipeline container stays active and waits for instructions.
 
-In the Prefect UI, go to the Deployments tab.
-
-Find nasdaq-manual-deployment (under the nasdaq-master-pipeline flow).
-
-Click the Run button (Quick Run) to start the ingestion and processing loop.
+* In the Prefect UI, go to the **Deployments**tab.
+* Find **nasdaq-manual-deployment** (under the nasdaq-master-pipeline flow).
+* Click the three dots (options menu) on the right and select **Quick Run**.
 
 ### 3. Monitoring & Debugging
-If a pipeline run fails (turns red in the UI):
-
-Inspect Tasks: Click on the failed run to see exactly which task failed (e.g., fetch_ticker_data).
-
-View Logs: The UI captures all Python print statements and errors. You can filter logs by "Level" (Info/Error) to find the root cause.
-
-Retries: We have configured the system to automatically retry failed API calls. You will see these attempts logged in the task history.
+If a pipeline run fails:
+* Inspect Tasks: Click on the failed run to see exactly which task failed (e.g., fetch_ticker_data).
+* View Logs: The UI captures all Python print statements and errors. You can filter logs by "Level" (Info/Error) to find the root cause.
+* Retries: We have configured the system to automatically retry failed API calls. You will see these attempts logged in the task history.
 
 ---
 ## 5. Great Expectations
@@ -156,13 +151,13 @@ If validation fails, the pipeline stops.
 2.  Locate the `# --- DEFINE EXPECTATIONS ---` section.
 3.  Add your new rules using the `validator` object:
 ```python
-    # Example: Check for specific ticker formats
-    validator.expect_column_values_to_match_regex("ticker", r"^[A-Z]{1,5}$")
+# Example: Check for specific ticker formats
+ validator.expect_column_values_to_match_regex("ticker", r"^[A-Z]{1,5}$")
 ```
 
 4.  **Important:** After updating the code, you must delete the old JSON file to let the automation recreate it, or run the script manually:
 ```bash
-        docker exec -it nasdaq-pipeline python gx/create_suite.py    
+docker exec -it nasdaq-pipeline python gx/create_suite.py    
 ```
 
 ### Viewing Validation Reports (Data Docs)
