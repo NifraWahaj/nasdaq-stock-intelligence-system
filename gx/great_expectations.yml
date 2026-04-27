@@ -8,13 +8,13 @@ datasources:
       class_name: SqlAlchemyExecutionEngine
       module_name: great_expectations.execution_engine
       connection_string: ${DATABASE_URL}
-
     data_connectors:
       default_runtime_data_connector:
+        name: default_runtime_data_connector
         class_name: RuntimeDataConnector
+        module_name: great_expectations.datasource.data_connector
         batch_identifiers:
           - default_identifier_name
-
 config_variables_file_path: uncommitted/config_variables.yml
 
 plugins_directory: plugins/
@@ -34,7 +34,6 @@ stores:
 
   evaluation_parameter_store:
     class_name: EvaluationParameterStore
-
   checkpoint_store:
     class_name: CheckpointStore
     store_backend:
@@ -59,7 +58,32 @@ data_docs_sites:
     class_name: SiteBuilder
     show_how_to_buttons: true
     store_backend:
-        class_name: TupleFilesystemStoreBackend
-        base_directory: uncommitted/data_docs/local_site/
+      class_name: TupleFilesystemStoreBackend
+      base_directory: uncommitted/data_docs/local_site/
     site_index_builder:
-        class_name: DefaultSiteIndexBuilder
+      class_name: DefaultSiteIndexBuilder
+fluent_datasources:
+  nasdaq_datasource:
+    type: postgres
+    assets:
+      prices:
+        type: table
+        order_by: []
+        batch_metadata: {}
+        table_name: prices
+        schema_name:
+      nasdaq_stock_data:
+        type: table
+        order_by: []
+        batch_metadata: {}
+        table_name: prices
+        schema_name:
+    connection_string: postgresql+psycopg2://nasdaq_user:abc123@db:5432/nasdaq
+notebooks:
+anonymous_usage_statistics:
+  data_context_id: e73f768a-5eb7-4611-8969-96aa8a9e388f
+  enabled: true
+include_rendered_content:
+  globally: false
+  expectation_suite: false
+  expectation_validation_result: false

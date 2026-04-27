@@ -1,43 +1,107 @@
-# gx/create_suite.py
 import great_expectations as gx
-from great_expectations.core.batch import RuntimeBatchRequest
-import json
+
 
 def create_nasdaq_suite():
-    """
-    Core logic to build and save the expectation suite.
-    """
-    context = gx.get_context(context_root_dir="/app/gx")
-    
-    # Creates new or refreshes existing suite
-    context.add_or_update_expectation_suite(expectation_suite_name="prices_suite")
+    # 1. Initialize Context
+    context = gx.get_context()
 
-    batch_request = RuntimeBatchRequest(
-        datasource_name="nasdaq_postgres",
-        data_connector_name="default_runtime_data_connector",
-        data_asset_name="prices",
-        runtime_parameters={
-            "query": "SELECT * FROM prices LIMIT 100" # Limit for speed during init
-        },
-        batch_identifiers={
-            "default_identifier_name": "initial_suite_build"
-        }
-    )
+    # 2. Setup Data Asset
+    datasource_name = "nasdaq_datasource"
+    asset_name = "nasdaq_stock_data"
 
+    datasource = context.get_datasource(datasource_name)
+
+    try:
+        asset = datasource.get_asset(asset_name)
+    except Exception:
+        asset = datasource.add_table_asset(
+            name=asset_name,
+            table_name="prices"
+        )
+
+    # 3. Batch Request
+    batch_request = asset.build_batch_request()
+
+    # 4. Ensure Suite Exists
+    suite_name = "nasdaq_suite"
+
+    try:
+        context.get_expectation_suite(suite_name)
+    except Exception:
+        context.add_expectation_suite(expectation_suite_name=suite_name)
+
+    # 5. Validator
     validator = context.get_validator(
         batch_request=batch_request,
-        expectation_suite_name="prices_suite"
+        expectation_suite_name=suite_name
     )
 
-    # --- DEFINE EXPECTATIONS ---
-    validator.expect_column_values_to_not_be_null("close")
-    
-    # Save the suite to the JSON file
-    validator.save_expectation_suite(discard_failed_expectations=False)
-    
-    print("Expectation suite 'prices_suite' saved successfully.")
-    return True
+    # Optional but recommended: clear old expectations (avoids duplicates)
+    validator.expectation_suite.expectations = []
 
-if __name__ == "__main__`":
-    # This only runs if you call the script directly via CLI
+    # ─────────────────────────────────────────────
+    # EXPECTATIONS
+    # ─────────────────────────────────────────────
+
+    # NULL CHECKS
+    columns = ["symbol", "date", "open", "high", "low", "close", "volume"]
+    for col in columns:
+        validator.expect_column_values_to_not_be_null(column=col)
+
+    # SYMBOL FORMAT
+    validator.expect_column_values_to_match_regex(
+        column="symbol",
+        regex=r"^[A-Z]{1,5}$"
+    )
+
+    # OHLC INTEGRITY (SUPPORTED GX METHODS)
+
+    # high >= low
+    validator.expect_column_pair_values_A_to_be_greater_than_B(
+        column_A="high",
+        column_B="low",
+        or_equal=True
+    )
+
+    # high >= open
+    validator.expect_column_pair_values_A_to_be_greater_than_B(
+        column_A="high",
+        column_B="open",
+        or_equal=True
+    )
+
+    # high >= close
+    validator.expect_column_pair_values_A_to_be_greater_than_B(
+        column_A="high",
+        column_B="close",
+        or_equal=True
+    )
+
+    # open >= low
+    validator.expect_column_pair_values_A_to_be_greater_than_B(
+        column_A="open",
+        column_B="low",
+        or_equal=True
+    )
+
+    # close >= low
+    validator.expect_column_pair_values_A_to_be_greater_than_B(
+        column_A="close",
+        column_B="low",
+        or_equal=True
+    )
+
+    # UNIQUENESS
+    validator.expect_compound_columns_to_be_unique(
+        column_list=["symbol", "date"]
+    )
+
+    # 6. Save
+    validator.save_expectation_suite(discard_failed_expectations=False)
+
+    print(f"✅ Successfully created/updated suite: {suite_name}")
+    return "Suite created successfully"
+
+
+if __name__ == "__main__":
     create_nasdaq_suite()
