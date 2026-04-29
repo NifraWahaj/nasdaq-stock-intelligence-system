@@ -67,15 +67,15 @@ def master_pipeline():
     processing_flow()
     
     # Stage 3: ML 
-    # ml_flow()
+    ml_results = ml_flow()
     
     # Stage 4: Generate predictions
     # prediction_flow()
     
     # Advance Extension
-    # train_result = ml_flow()
-    # task_monitor(train_result)   # runs after ML, uses today's model version
-    task_monitor()
+    #train_result = ml_flow()
+    #task_monitor(train_result)   # runs after ML, uses today's model version
+    task_monitor(ml_results)
     logger.info("Master pipeline complete")
 
 if __name__ == "__main__":
