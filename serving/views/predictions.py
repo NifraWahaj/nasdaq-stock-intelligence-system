@@ -2,6 +2,7 @@ import streamlit as st
 from serving.components.db import get_predictions, get_prediction_accuracy
 from serving.components.charts import prediction_vs_actual
 from serving.components.theme import NASDAQ_GREEN, NASDAQ_RED
+import pandas as pd
 
 TICKERS = ["AAPL","MSFT","NVDA","GOOGL","AMZN",
            "META","TSLA","INTC","AMD","NFLX"]
@@ -17,11 +18,16 @@ def render():
 
     with col1:
         symbol = st.selectbox("Select Ticker", TICKERS)
+        days = st.number_input("Filter: Last N Days", min_value=1, max_value=60, value=14)
 
     with col2:
         if pred_df.empty:
             st.info("No predictions yet — ML pipeline hasn't run.")
         else:
+            pred_df["date"] = pd.to_datetime(pred_df["date"])
+            cutoff = pd.Timestamp.today() - pd.Timedelta(days=days)
+            pred_df = pred_df[pred_df["date"] >= cutoff]
+
             st.plotly_chart(
                 prediction_vs_actual(pred_df, symbol),
                 use_container_width=True
