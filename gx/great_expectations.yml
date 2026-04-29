@@ -78,7 +78,7 @@ fluent_datasources:
         batch_metadata: {}
         table_name: prices
         schema_name:
-    connection_string: postgresql+psycopg2://nasdaq_user:abc123@db:5432/nasdaq
+    connection_string: ${DATABASE_URL}
 notebooks:
 anonymous_usage_statistics:
   data_context_id: e73f768a-5eb7-4611-8969-96aa8a9e388f
