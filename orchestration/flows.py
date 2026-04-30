@@ -55,27 +55,24 @@ def master_pipeline():
     4. Train ML + generate predictions
     """
     logger.info("Master pipeline starting")
-
-    # SETUP
+    
     task_init_db()
-    task_init_ge() 
-    
-    # Stage 1: Ingestion 
-    ingestion_flow()
-    
-    # Stage 2: Feature engineering
-    processing_flow()
-    
-    # Stage 3: ML 
-    ml_results = ml_flow()
+    task_init_ge()
 
-    # Advance Extension
-    task_monitor(ml_results)
+    ingestion_flow()
+
+    processing_flow()
+
+    ml_result = ml_flow()
+    
+    task_monitor(train_result=ml_result.get("training")) 
+    
     logger.info("Master pipeline complete")
+
 
 if __name__ == "__main__":
     master_pipeline.serve(
-        name="nasdaq-manual-deployment",
+        name="nasdaq-daily-deployment",
         tags=["dev", "nasdaq"],
         description="Manual trigger for the full Nasdaq pipeline",
         schedules=[CronSchedule(cron="30 17 * * 1-5", timezone="America/New_York")] # runs at 5:30 PM New York time

@@ -51,7 +51,8 @@ services:
       PYTHONPATH: .
     volumes:
       - .:/app
-      - model_store:/app/models
+      - ./models:/app/models
+      
     depends_on:
       db:
         condition: service_healthy
@@ -71,6 +72,8 @@ services:
       - "8501:8501"
     volumes:
       - .:/app
+      - ./models:/app/models  
+      
     depends_on:
       db:
         condition: service_healthy

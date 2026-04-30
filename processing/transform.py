@@ -16,13 +16,13 @@ def clean_ticker_data(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("clean_ticker_data received an empty DataFrame — skipping.")
         return df
 
-    # Work on a copy to ensure original (raw) data is untouched (Task 1.7)
+    # Work on a copy to ensure original (raw) data is untouched 
     clean_df = df.copy()
     initial_count = len(clean_df)
     logger.info(f"[Transform] Starting with {initial_count} rows.")
 
     # ------------------------------------------------------------------
-    # 1.1 & 1.3: Null Handling & Positive Constraints
+    #  Null Handling & Positive Constraints
     # ------------------------------------------------------------------
     cols_to_check = ['open', 'high', 'low', 'close', 'volume']
 
@@ -45,7 +45,7 @@ def clean_ticker_data(df: pd.DataFrame) -> pd.DataFrame:
             logger.info(f"[1.1/1.3] Column '{col}': clean — no nulls or non-positive values.")
 
     # ------------------------------------------------------------------
-    # 1.8: Volume Sanity (volume >= 100)
+    # Volume Sanity (volume >= 100)
     # ------------------------------------------------------------------
     before = len(clean_df)
     low_volume = (clean_df['volume'] < 100).sum()
@@ -61,7 +61,7 @@ def clean_ticker_data(df: pd.DataFrame) -> pd.DataFrame:
         logger.info(f"[1.8] Volume sanity: all rows have volume >= 100.")
 
     # ------------------------------------------------------------------
-    # 1.2: Price Consistency (High must be highest, Low must be lowest)
+    # Price Consistency (High must be highest, Low must be lowest)
     # ------------------------------------------------------------------
     before = len(clean_df)
     valid_prices = (
@@ -91,7 +91,7 @@ def clean_ticker_data(df: pd.DataFrame) -> pd.DataFrame:
         logger.info(f"[1.2] Price consistency: all rows passed.")
 
     # ------------------------------------------------------------------
-    # 1.4: Outlier Filter (daily return > 50% is dropped)
+    # Outlier Filter (daily return > 50% is dropped)
     # ------------------------------------------------------------------
     before = len(clean_df)
     clean_df = clean_df.sort_values(['symbol', 'date'])
@@ -117,7 +117,7 @@ def clean_ticker_data(df: pd.DataFrame) -> pd.DataFrame:
         logger.info(f"[1.4] Outlier filter: no outliers detected.")
 
     # ------------------------------------------------------------------
-    # 1.5: Deduplication — strict uniqueness on (date, symbol)
+    # Deduplication — strict uniqueness on (date, symbol)
     # ------------------------------------------------------------------
     before = len(clean_df)
     duplicates = clean_df.duplicated(subset=['date', 'symbol'], keep='first')
@@ -138,9 +138,6 @@ def clean_ticker_data(df: pd.DataFrame) -> pd.DataFrame:
     else:
         logger.info(f"[1.5] Deduplication: no duplicates found.")
 
-    # ------------------------------------------------------------------
-    # Final summary
-    # ------------------------------------------------------------------
     total_dropped = initial_count - len(clean_df)
     logger.info(
         f"[Transform] Complete — {len(clean_df)}/{initial_count} rows passed "

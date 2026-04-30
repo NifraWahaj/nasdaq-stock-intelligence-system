@@ -90,3 +90,6 @@ def run_monitoring(model_version: str = None) -> dict:
         "prediction": pred_drift,
         "predictions_made": count
     }
+if __name__ == "__main__":
+    result = run_monitoring()
+    print(result)

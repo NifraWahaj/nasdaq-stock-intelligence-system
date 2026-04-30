@@ -50,11 +50,11 @@ def render():
 
 
 def _render_ticker_grid(df: pd.DataFrame):
+    df = df.reset_index(drop=True)          
     cols = st.columns(5)
-    for i, (idx, row) in enumerate(df.iterrows()):
+    for i, row in df.iterrows():           
         with cols[i % 5]:
-            # This uses the card function from your theme.py
-            with st.container(border=True): 
+            with st.container(border=True):
                 st.markdown(f"**{row['symbol']}**")
                 st.title(f"${row['close']:.2f}")
                 vol = f"{int(row['volume']):,}"

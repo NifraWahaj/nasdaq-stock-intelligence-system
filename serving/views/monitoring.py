@@ -19,7 +19,7 @@ def render():
     latest = logs_df.iloc[0]
 
     # Health banner
-    if latest.get("drift_detected"):
+    if bool(latest["drift_detected"]):
         st.error(
             f"Data drift detected! "
             f"PSI score: {latest.get('drift_score', 0):.4f} | "

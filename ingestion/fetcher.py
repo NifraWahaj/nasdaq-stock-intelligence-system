@@ -7,8 +7,6 @@ import pytz
 import yfinance as yf
 from sqlalchemy import text
 from storage.db import engine
-
-# --- NEW IMPORT (Task 1.0) ---
 from processing.transform import clean_ticker_data
 
 """
@@ -117,37 +115,6 @@ def fetch_ticker_raw(symbol: str, start: date, end: date) -> pd.DataFrame:
         logger.error(f"Failed to fetch {symbol}: {e}")
         return pd.DataFrame()
 
-# NOTE: The old 'clean_ticker' function has been removed. 
-# We now use 'clean_ticker_data' from processing.transform.
-
-
-# def clean_ticker(df: pd.DataFrame) -> pd.DataFrame:
-#     """
-#     Apply minimal cleaning to raw ticker data for downstream use.
-
-#     Args:
-#         df (pd.DataFrame): Raw OHLCV data
-
-#     Returns:
-#         pd.DataFrame: Cleaned dataset suitable for prices table
-
-#     Cleaning Rules:
-#         - Convert numeric columns to proper types
-#         - Round price fields to 4 decimal places
-#         - Remove rows with invalid or missing closing prices
-
-#     Design Principle:
-#         Only remove definitively invalid data — do not over-clean.
-#     """
-#     df = df.copy()
-#     for col in ["open", "high", "low", "close"]:
-#         df[col] = pd.to_numeric(df[col], errors="coerce").round(4)
-#     df["volume"] = pd.to_numeric(df["volume"], errors="coerce").astype("Int64")
-
-#     # Drop definitive data errors only
-#     df = df[df["close"].notna() & (df["close"] > 0)]
-#     return df
-
 
 def fetch_all_raw(tickers: list[str] = TICKERS) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -189,11 +156,10 @@ def fetch_all_raw(tickers: list[str] = TICKERS) -> tuple[pd.DataFrame, pd.DataFr
         if raw_df.empty:
             continue
 
-        # 1. Append to raw list (Audit Integrity - Task 1.7)
+        # 1. Append to raw list 
         raw_frames.append(raw_df)
         
-        # 2. Transform and append to clean list (Tasks 1.1 - 1.8)
-        # We pass the raw_df through your new logic
+        # 2. Transform and append to clean list
         validated_df = clean_ticker_data(raw_df)
         clean_frames.append(validated_df)
 

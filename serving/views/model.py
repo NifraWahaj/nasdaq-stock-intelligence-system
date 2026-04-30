@@ -1,3 +1,4 @@
+# serving/views/model.py
 import json
 import streamlit as st
 from serving.components.db import get_champion, get_model_history

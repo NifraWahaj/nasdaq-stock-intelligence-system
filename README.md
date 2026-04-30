@@ -36,48 +36,24 @@ docker-compose up --build
 
 ```text
 nasdaq-intelligence/
-├── gx/                       # Great Expectations (GE) configuration
-│   ├── checkpoints/          # Checkpoint definitions for validation runs
-│   ├── expectations/         # The "prices_suite.json" (Auto-generated)
-│   ├── uncommitted/          # Local validation results & HTML Data Docs
-│   └── create_suite.py       # Script to define/update rules
-├── ingestion/                # Extraction & Loading (EL)
-│   ├── fetcher.py            # API calls (yfinance) + local cleaning
-│   ├── loader.py             # PostgreSQL interaction (SQLAlchemy/psycopg2)
-│   └── pipeline.py           # Prefect flow: fetcher → loader
-├── processing/               # Transformation & Validation
-│   ├── features.py           # Feature engineering
-│   ├── validation.py         # GE Checkpoint execution logic
-│   └── pipeline.py           # Prefect flow: validation → feature engineering
-├── orchestration/            # Centralized Workflow Management
-│   └── flows.py              # Master pipeline: setup → ingestion → processing
-├── storage/                  # Database Layer
-│   ├── db.py                 # Connection pooling and engine setup
-│   └── schema.sql            # Table definitions 
-├── ml/                       # Machine Learning Lifecycle
-├── models/
-├── serving/                  # Output Layer
-│   └── dashboard.py            # Streamlit UI for stock visualization
-├──serving/
-│   ├── dashboard.py          # entry point, just imports and renders pages
+├── ingestion/               # Data extraction + loading
+├── processing/              # Validation + feature engineering
+├── ml/                      # XGBoost trainer + prediction pipeline
+├── monitoring/              # Drift + monitoring
+├── serving/                 # Streamlit dashboard
+│   ├── dashboard.py
 │   ├── views/
-│       ├── overview.py       # market summary, all 10 tickers at a glance
-│       ├── predictions.py    # next-day predictions + actual vs predicted
-│       ├── model.py          # model metrics, SHAP, version history
-│       └── monitoring.py     # drift detection, MAE trends, pipeline health
-└── components/
-│       ├── charts.py         # reusable chart functions
-│       ├── db.py             # all DB queries for dashboard (read-only)
-│       └── theme.py          # colors, styling constants
-└──monitoring/
-│    ├── drift.py             # data drift + prediction drift detection
-│    └── monitor.py           # structured monitoring metrics, logged per run
-├── Dockerfile                # Environment definition
-├── docker-compose.yml        # Multi-container orchestration (DB, API, Prefect)
-├── requirements.txt          # Python dependencies
-├── TODO.md                   # Pending tasks
-└── .env                      # Local credentials (DO NOT COMMIT)
+│   └── components/
+├── storage/                 # DB config + schema
+├── orchestration/           # Prefect master flow + cron schedule
+├── gx/                      # Great Expectations config + expectations suite
+├── models/                  # Saved model artifacts (champion.pkl, metrics JSON)
+├── logs/                    # Pipeline run logs (JSON structured)
+├── docker-compose.yml
+├── Dockerfile
+└── requirements.txt
 ```
+---
 
 ## Docker Cheat Sheet
 

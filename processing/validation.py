@@ -56,11 +56,10 @@ def run_validation():
 
         # 5. Evaluate results
         if not results.success:
-            logger.error("❌ Data Validation Failed!")
-            # This exception will stop the Prefect pipeline
+            logger.error("Data Validation Failed!")
             raise ValueError("Table 'prices' failed GX validation. Check Data Docs for details.")
             
-        logger.info("✅ Data Validation Passed Successfully.")
+        logger.info("Data Validation Passed Successfully.")
         return True
 
     except Exception as e:

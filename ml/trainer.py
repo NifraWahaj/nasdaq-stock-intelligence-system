@@ -1,107 +1,251 @@
 # ml/trainer.py
-import pandas as pd
-import numpy as np
-import xgboost as xgb
-import pickle
 import os
-from datetime import datetime
-from sqlalchemy import text
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from storage.db import engine
-import shap
-
+import json
 import logging
-logger = logging.getLogger(__name__)
+import pickle
+from datetime import date
 
-def train_model():
-    # 1. Fetch Data
-    query = "SELECT * FROM features ORDER BY date ASC"
-    df = pd.read_sql(query, engine)
-    
-    if df.empty:
-        logger.warning("No features found in DB — skipping training")
+import numpy as np
+import pandas as pd
+import shap
+import xgboost as xgb
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sqlalchemy import text
 
-        return
+from storage.db import engine
 
-    # 2. Preprocessing
-    # Features requested: 5 numeric + one-hot tickers
-    numeric_features = ['ma_7', 'ma_21', 'rsi_14', 'daily_return', 'volatility_7']
-    df = df.dropna(subset=numeric_features + ['target'])
+logger       = logging.getLogger(__name__)
+MODEL_DIR    = os.getenv("MODEL_DIR", "/app/models")
+FEATURE_COLS = [
+    "ma_7", "ma_21", "rsi_14", "daily_return", "volatility_7",
+    # one-hot encoded ticker columns added dynamically at training time
+]
+TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
+           "META", "TSLA", "INTC", "AMD", "NFLX"]
 
-    # One-hot encoding for the "Global" approach
-    ticker_df = pd.get_dummies(df['symbol'], prefix='ticker', dtype=int)
-    ticker_cols = ticker_df.columns.tolist()
-    
-    X = pd.concat([df[numeric_features], ticker_df], axis=1)
-    y = df['target']
 
-    X = X.astype(float)
-    y = y.astype(float)
-    feature_names = X.columns.tolist()
-
-    # 3. Time-Series Split (80/20, No Shuffle)
-    split = int(len(X) * 0.8)
-    X_train, X_test = X.iloc[:split], X.iloc[split:]
-    y_train, y_test = y.iloc[:split], y.iloc[split:]
-
-    # 4. Train XGBoost Regressor
-    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
-    model.fit(X_train, y_train)
-
-    # 5. Evaluation
-    preds = model.predict(X_test)
-    metrics = {
-        "rmse": float(np.sqrt(mean_squared_error(y_test, preds))),
-        "mae": float(mean_absolute_error(y_test, preds)),
-        "r2": float(r2_score(y_test, preds))
-    }
-    
-    logger.info(f"Model metrics — RMSE={metrics['rmse']:.4f} MAE={metrics['mae']:.4f} R²={metrics['r2']:.4f}")
-
-    # 6. SHAP Importance
-    explainer   = shap.Explainer(model, X_train)
-    shap_values = explainer(X_test[:500])  # sample for speed
-    shap_imp    = dict(zip(
-        feature_names,
-        np.abs(shap_values.values).mean(axis=0).tolist()
-    ))
-
-    model_data = {
-        "model": model,
-        "feature_cols": feature_names, 
-        "metrics": metrics,
-        "shap_importance": shap_imp
-    }
-    # 7. Save according to contract
+def fetch_all_features() -> pd.DataFrame:
+    """Fetch full features table — all tickers, all dates."""
+    query = text("""
+        SELECT date, symbol, ma_7, ma_21, rsi_14,
+               daily_return, volatility_7, target
+        FROM features
+        ORDER BY symbol, date
+    """)
     with engine.connect() as conn:
-        count = conn.execute(text(
-            "SELECT COUNT(*) FROM model_registry WHERE symbol = 'GLOBAL'"
-        )).scalar()
-    model_version = f"model_v{int(count) + 1}"
-
-    os.makedirs('/app/models', exist_ok=True)
-    model_path = f"/app/models/{model_version}.pkl"
-    champ_path = "/app/models/champion.pkl"
+        df = pd.read_sql(query, conn)
+    logger.info(f"Fetched {len(df)} feature rows across all tickers")
+    return df
 
 
-    with open(model_path, 'wb') as f:
-        pickle.dump(model_data, f)
-    with open(champ_path, 'wb') as f:
-        pickle.dump(model_data, f)
+def get_champion_rmse() -> float | None:
+    """Returns RMSE of current global champion, or None if none exists."""
+    query = text("""
+        SELECT rmse FROM model_registry
+        WHERE symbol = 'GLOBAL' AND is_champion = TRUE
+        ORDER BY trained_at DESC
+        LIMIT 1
+    """)
+    with engine.connect() as conn:
+        row = conn.execute(query).fetchone()
+    return float(row.rmse) if row else None
 
-    # 8. Update Model Registry
-    max_date = df['date'].max()
+
+def get_next_version() -> str:
+    """Generate version string — model_v1, model_v2, etc."""
+    query = text("""
+        SELECT COUNT(*) as cnt FROM model_registry
+        WHERE symbol = 'GLOBAL'
+    """)
+    with engine.connect() as conn:
+        row = conn.execute(query).fetchone()
+    version_num = (row.cnt or 0) + 1
+    return f"model_v{version_num}"
+
+
+def register_model(
+    version: str,
+    rmse: float,
+    mae: float,
+    r2: float,
+    model_path: str,
+    data_until,
+    is_champion: bool
+):
     with engine.begin() as conn:
+        if is_champion:
+            conn.execute(text("""
+                UPDATE model_registry
+                SET is_champion = FALSE
+                WHERE symbol = 'GLOBAL' AND is_champion = TRUE
+            """))
+
         conn.execute(text("""
-            INSERT INTO model_registry 
-            (symbol, model_version, is_champion, rmse, mae, r2, trained_on_data_until, model_path)
-            VALUES ('GLOBAL', :version, TRUE, :rmse, :mae, :r2, :max_date, :path)
+            INSERT INTO model_registry
+                (model_version, symbol, rmse, mae, r2,
+                 is_champion, trained_on_data_until, model_path)
+            VALUES
+                (:version, 'GLOBAL', :rmse, :mae, :r2,
+                 :is_champion, :data_until, :model_path)
+            ON CONFLICT (model_version) DO NOTHING
         """), {
-            "version": model_version, "rmse": metrics['rmse'], "mae": metrics['mae'],
-            "r2": metrics['r2'], "max_date": max_date, "path": champ_path
+            "version":     version,
+            "rmse":        rmse,
+            "mae":         mae,
+            "r2":          r2,
+            "is_champion": is_champion,
+            "data_until":  data_until,
+            "model_path":  model_path
         })
 
-    return {"version": model_version, **metrics, "is_champion": True}
+    logger.info(
+        f"Registered {version} | RMSE={rmse:.4f} | "
+        f"MAE={mae:.4f} | R²={r2:.4f} | champion={is_champion}"
+    )
 
-if __name__ == "__main__":
-    train_model()
+
+def train() -> dict:
+    """
+    Full global training pipeline:
+    1. Fetch all features (all tickers)
+    2. One-hot encode symbol
+    3. Temporal train/test split (80/20, sorted by date)
+    4. Train XGBoost
+    5. Evaluate RMSE, MAE, R²
+    6. Compute SHAP feature importance
+    7. Champion/challenger — replace champion if RMSE improves
+    8. Save model + metrics JSON
+    """
+    df = fetch_all_features()
+    df = df.dropna(subset=["ma_7", "ma_21", "rsi_14",
+                            "daily_return", "volatility_7", "target"])
+
+    if len(df) < 100:
+        raise ValueError(f"Not enough data to train: {len(df)} rows")
+
+    # One-hot encode symbol so model knows which ticker it's predicting
+    df = df.sort_values("date")
+    dummies = pd.get_dummies(df["symbol"], prefix="ticker", dtype=int)
+    df      = pd.concat([df, dummies], axis=1)
+
+    ticker_cols  = [c for c in df.columns if c.startswith("ticker_")]
+    all_features = ["ma_7", "ma_21", "rsi_14",
+                    "daily_return", "volatility_7"] + ticker_cols
+
+    X = df[all_features].astype(float)
+    y = df["target"].astype(float)
+
+    # Temporal split — no shuffle, preserves time order
+    split    = int(len(X) * 0.8)
+    X_train = X.iloc[:split]
+    X_test  = X.iloc[split:]
+    y_train, y_test = y[:split], y[split:]
+
+    model = xgb.XGBRegressor(
+        n_estimators=300,
+        max_depth=5,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        verbosity=0
+    )
+    model.fit(
+        X_train, y_train,
+        eval_set=[(X_test, y_test)],
+        verbose=False
+    )
+
+    preds = model.predict(X_test)
+    rmse  = float(np.sqrt(mean_squared_error(y_test, preds)))
+    mae   = float(mean_absolute_error(y_test, preds))
+    r2    = float(r2_score(y_test, preds))
+
+    logger.info(f"Evaluation — RMSE={rmse:.4f} MAE={mae:.4f} R²={r2:.4f}")
+
+    sample_size = min(500, len(X_test))
+
+    X_sample = X_test.iloc[:sample_size]
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer(X_sample)
+
+    shap_importance = {
+        f: float(v)
+        for f, v in zip(all_features, np.abs(shap_values.values).mean(axis=0))
+    }
+
+    # Version + paths
+    version      = get_next_version()
+    model_path   = os.path.join(MODEL_DIR, f"{version}.pkl")
+    metrics_path = os.path.join(MODEL_DIR, f"metrics_{version}.json")
+
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    # Always save versioned copy
+    payload = {
+        "model":            model,
+        "feature_cols":     all_features,
+        "shap_importance":  shap_importance,
+        "ticker_cols":      ticker_cols,
+        "trained_on":       str(date.today()),
+        "metrics":          {"rmse": rmse, "mae": mae, "r2": r2}
+    }
+    with open(model_path, "wb") as f:
+        pickle.dump(payload, f)
+
+    # Save metrics JSON alongside model
+    with open(metrics_path, "w") as f:
+        json.dump({
+            "version":          version,
+            "rmse":             rmse,
+            "mae":              mae,
+            "r2":               r2,
+            "shap_importance":  shap_importance,
+            "trained_on":       str(date.today()),
+            "train_rows":       split,
+            "test_rows":        len(X_test)
+        }, f, indent=2)
+
+    # Champion/challenger
+    champion_rmse = get_champion_rmse()
+    is_champion   = (champion_rmse is None) or (rmse < champion_rmse)
+
+    if is_champion:
+        champion_path = os.path.join(MODEL_DIR, "champion.pkl")
+        with open(champion_path, "wb") as f:
+            pickle.dump(payload, f)
+
+        if champion_rmse is None:
+            logger.info(f"First champion set: {version} (RMSE={rmse:.4f})")
+        else:
+            logger.info(
+                f"New champion: {version} "
+                f"(RMSE {rmse:.4f} < {champion_rmse:.4f})"
+            )
+    else:
+        logger.info(
+            f"Challenger {version} RMSE={rmse:.4f} did NOT beat "
+            f"champion RMSE={champion_rmse:.4f} — keeping champion"
+        )
+
+    register_model(
+        version=version,
+        rmse=rmse,
+        mae=mae,
+        r2=r2,
+        model_path=model_path,
+        data_until=df["date"].max(),
+        is_champion=is_champion
+    )
+
+    return {
+        "version":          version,
+        "rmse":             rmse,
+        "mae":              mae,
+        "r2":               r2,
+        "is_champion":      is_champion,
+        "shap_importance":  shap_importance,
+        "model_path":       model_path,
+        "metrics_path":     metrics_path
+    }
