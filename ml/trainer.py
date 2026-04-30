@@ -1,3 +1,4 @@
+# ml/trainer.py
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -7,6 +8,10 @@ from datetime import datetime
 from sqlalchemy import text
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from storage.db import engine
+import shap
+
+import logging
+logger = logging.getLogger(__name__)
 
 def train_model():
     # 1. Fetch Data
@@ -14,7 +19,8 @@ def train_model():
     df = pd.read_sql(query, engine)
     
     if df.empty:
-        print("No features found in DB.")
+        logger.warning("No features found in DB — skipping training")
+
         return
 
     # 2. Preprocessing
@@ -23,11 +29,14 @@ def train_model():
     df = df.dropna(subset=numeric_features + ['target'])
 
     # One-hot encoding for the "Global" approach
-    ticker_df = pd.get_dummies(df['symbol'], prefix='ticker')
+    ticker_df = pd.get_dummies(df['symbol'], prefix='ticker', dtype=int)
     ticker_cols = ticker_df.columns.tolist()
     
     X = pd.concat([df[numeric_features], ticker_df], axis=1)
     y = df['target']
+
+    X = X.astype(float)
+    y = y.astype(float)
     feature_names = X.columns.tolist()
 
     # 3. Time-Series Split (80/20, No Shuffle)
@@ -47,25 +56,33 @@ def train_model():
         "r2": float(r2_score(y_test, preds))
     }
     
-    print(f"Model Metrics: {metrics}")
+    logger.info(f"Model metrics — RMSE={metrics['rmse']:.4f} MAE={metrics['mae']:.4f} R²={metrics['r2']:.4f}")
 
-    # 6. SHAP Importance (simplified for contract)
-    # Using internal feature_importances_ as a proxy for the dict key
-    shap_imp = {name: float(imp) for name, imp in zip(feature_names, model.feature_importances_)}
+    # 6. SHAP Importance
+    explainer   = shap.Explainer(model, X_train)
+    shap_values = explainer(X_test[:500])  # sample for speed
+    shap_imp    = dict(zip(
+        feature_names,
+        np.abs(shap_values.values).mean(axis=0).tolist()
+    ))
 
-    # 7. Save according to contract
-    model_version = "model_v1"
     model_data = {
         "model": model,
-        "feature_cols": feature_names,
-        "ticker_cols": ticker_cols,
-        "shap_importance": shap_imp,
-        "metrics": metrics
+        "feature_cols": feature_names, 
+        "metrics": metrics,
+        "shap_importance": shap_imp
     }
+    # 7. Save according to contract
+    with engine.connect() as conn:
+        count = conn.execute(text(
+            "SELECT COUNT(*) FROM model_registry WHERE symbol = 'GLOBAL'"
+        )).scalar()
+    model_version = f"model_v{int(count) + 1}"
 
     os.makedirs('/app/models', exist_ok=True)
     model_path = f"/app/models/{model_version}.pkl"
     champ_path = "/app/models/champion.pkl"
+
 
     with open(model_path, 'wb') as f:
         pickle.dump(model_data, f)

@@ -1,3 +1,4 @@
+# ml/predictor.py
 import pandas as pd
 import pickle
 import os
@@ -5,11 +6,14 @@ from sqlalchemy import text
 from datetime import timedelta
 from storage.db import engine
 
+import logging
+logger = logging.getLogger(__name__)
+
 def make_predictions():
     # 1. Load Champion
     path = "/app/models/champion.pkl"
     if not os.path.exists(path):
-        print("Champion model not found.")
+        logger.warning("Champion model not found at /app/models/champion.pkl — skipping predictions")
         return
     
     with open(path, 'rb') as f:
@@ -41,6 +45,14 @@ def make_predictions():
     if next_date.weekday() >= 5: # Sat=5, Sun=6
         next_date += timedelta(days=(7 - next_date.weekday()))
 
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT model_version FROM model_registry
+            WHERE symbol = 'GLOBAL' AND is_champion = TRUE
+            ORDER BY trained_at DESC LIMIT 1
+        """)).fetchone()
+    champion_version = row.model_version if row else "unknown"
+
     # 6. Insert Predictions
     with engine.begin() as conn:
         for _, row in df.iterrows():
@@ -50,7 +62,7 @@ def make_predictions():
                 ON CONFLICT (date, symbol) DO NOTHING
             """), {
                 "date": next_date, "symbol": row['symbol'], 
-                "pred": float(row['predicted_close']), "version": "model_v1"
+                "pred": float(row['predicted_close']), "version": champion_version
             })
         
         # 7. Backfill actual_close
