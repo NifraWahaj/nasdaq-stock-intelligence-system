@@ -24,3 +24,8 @@ great_expectations/uncommitted/
 
 logs/
 *.log
+
+# model artifacts 
+models/*.pkl
+models/*.joblib
+models/*.json
