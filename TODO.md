@@ -29,6 +29,44 @@ How to verify
 * Check logs: You should clearly see whether the challenger was promoted or rejected and why
 
 ---
+**Task 2.0:** Fix inconsistent naming between .pkl and .json files
+**Owner:** `[Junaid]` | **Start:** `2026-05-` | **Status:**  *Pending*
+
+File: ml/trainer.py
+Problem: Model artifacts use inconsistent naming:
+
+   Model file → model_v1.pkl 
+   Metrics file → metrics_model_v1.json 
+
+Goal
+
+Adopt structured naming convention:
+<artifact_type>__<scope>__<version>__<datetime>.<ext>
+
+Expected Output Format
+model__GLOBAL__model_v1__2026-04-30T17-30-00.pkl
+metrics__GLOBAL__model_v1__2026-04-30T17-30-00.json
+
+*Steps*
+
+1. Locate artifact path construction inside `train()` in `ml/trainer.py`
+
+2. Identify where:
+   - model file path is defined  
+   - metrics file path is defined  
+
+3. Update naming to include:
+   - `artifact_type` → `model` / `metrics`  
+   - `scope` → `GLOBAL`  
+   - `version` → existing variable  
+   - `datetime` → training timestamp  
+
+4. Ensure:
+   - `.pkl` and `.json` follow identical structure  
+   - ordering is consistent across both 
+
+---
+
 **Task 7.0: Project Documentation** **Owner:** `[]` | **Start:** `2026-04-` | **Status:** *Pending*
 * maximum 3 pages
 * Team Details: Roll numbers and 1-2 line contributions of each member
