@@ -38,8 +38,10 @@ CSS = """
         color: #FFFFFF !important;
         font-weight: 500 !important;
     }
-    .stCaption {
-        color: #FFFFFF !important; /* Lighter gray than before */
+    .stCaption p {
+        color: #FFFFFF !important;  
+        font-size: 2.9rem !important;
+        opacity: 0.9 !important;
     }
     
     [data-testid="stSidebar"] * { color: #E8EDF5 !important; }
@@ -58,7 +60,6 @@ CSS = """
         font-weight: 700 !important;
     }
 
-    /* Positive/negative delta colors */
     [data-testid="stMetricDelta"] svg { display: none; }
     .positive-delta { color: #00C878 !important; }
     .negative-delta { color: #FF3B3B !important; }
@@ -72,7 +73,11 @@ CSS = """
 
     /* Section headers */
     h1, h2, h3 { color: #E8EDF5 !important; font-weight: 700 !important; }
-    h1 { border-bottom: 2px solid #0066CC; padding-bottom: 8px; }
+    h1 { 
+        border-bottom: 2px solid #0066CC !important; 
+        padding-bottom: 8px !important;
+        background: transparent !important; 
+    }
 
     /* Selectbox + inputs */
     [data-testid="stSelectbox"] > div { background-color: #111827 !important; }
@@ -100,11 +105,30 @@ CSS = """
     button[data-testid="stHeaderAction"] {
         display: none !important;
     }
+    /* Fix the white block issue by ensuring main container transparency */
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0) !important;
+    }
 
-    /* This covers newer versions of Streamlit anchor icons */
+    .main .block-container {
+        background-color: #0A0E1A !important;
+    }
+
     .st-expanderHeader a, .st-emotion-cache-b698h6 a {
         display: none !important;
     }
+    iframe[title="streamlit_autorefresh.st_autorefresh"] {
+        display: none !important;
+    }
+    [data-testid="stCaptionContainer"], 
+    [data-testid="stCaptionContainer"] p {
+        color: #FFFFFF !important; 
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        line-height: 1.5 !important;
+        opacity: 1 !important;
+    }
+        
 
 </style>
 """
