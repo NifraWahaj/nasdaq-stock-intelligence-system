@@ -3,7 +3,7 @@ import os
 import json
 import logging
 import pickle
-from datetime import date
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -49,6 +49,19 @@ def get_champion_rmse() -> float | None:
     with engine.connect() as conn:
         row = conn.execute(query).fetchone()
     return float(row.rmse) if row else None
+
+
+def get_champion_mae() -> float | None:
+    """Returns MAE of current global champion, or None if none exists."""
+    query = text("""
+        SELECT mae FROM model_registry
+        WHERE symbol = 'GLOBAL' AND is_champion = TRUE
+        ORDER BY trained_at DESC
+        LIMIT 1
+    """)
+    with engine.connect() as conn:
+        row = conn.execute(query).fetchone()
+    return float(row.mae) if row else None
 
 
 def get_next_version() -> str:
@@ -113,7 +126,7 @@ def train() -> dict:
     4. Train XGBoost
     5. Evaluate RMSE, MAE, R²
     6. Compute SHAP feature importance
-    7. Champion/challenger — replace champion if RMSE improves
+    7. Champion/challenger — replace champion only when RMSE and MAE rules pass
     8. Save model + metrics JSON
     """
     df = fetch_all_features()
@@ -177,8 +190,11 @@ def train() -> dict:
 
     # Version + paths
     version      = get_next_version()
-    model_path   = os.path.join(MODEL_DIR, f"{version}.pkl")
-    metrics_path = os.path.join(MODEL_DIR, f"metrics_{version}.json")
+    trained_at_ts = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    model_filename = f"model__GLOBAL__{version}__{trained_at_ts}.pkl"
+    metrics_filename = f"metrics__GLOBAL__{version}__{trained_at_ts}.json"
+    model_path   = os.path.join(MODEL_DIR, model_filename)
+    metrics_path = os.path.join(MODEL_DIR, metrics_filename)
 
     os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -188,7 +204,7 @@ def train() -> dict:
         "feature_cols":     all_features,
         "shap_importance":  shap_importance,
         "ticker_cols":      ticker_cols,
-        "trained_on":       str(date.today()),
+        "trained_on":       trained_at_ts,
         "metrics":          {"rmse": rmse, "mae": mae, "r2": r2}
     }
     with open(model_path, "wb") as f:
@@ -202,14 +218,18 @@ def train() -> dict:
             "mae":              mae,
             "r2":               r2,
             "shap_importance":  shap_importance,
-            "trained_on":       str(date.today()),
+            "trained_on":       trained_at_ts,
             "train_rows":       split,
             "test_rows":        len(X_test)
         }, f, indent=2)
 
     # Champion/challenger
     champion_rmse = get_champion_rmse()
-    is_champion   = (champion_rmse is None) or (rmse < champion_rmse)
+    champion_mae = get_champion_mae()
+    champion_mae_limit = (champion_mae * 1.05) if champion_mae is not None else None
+    rmse_improved = (champion_rmse is None) or (rmse < champion_rmse)
+    mae_within_tolerance = (champion_mae_limit is None) or (mae <= champion_mae_limit)
+    is_champion   = rmse_improved and mae_within_tolerance
 
     if is_champion:
         champion_path = os.path.join(MODEL_DIR, "champion.pkl")
@@ -217,17 +237,32 @@ def train() -> dict:
             pickle.dump(payload, f)
 
         if champion_rmse is None:
-            logger.info(f"First champion set: {version} (RMSE={rmse:.4f})")
+            logger.info(
+                f"First champion set: {version} "
+                f"(RMSE={rmse:.4f}, MAE={mae:.4f})"
+            )
         else:
+            mae_msg = (
+                f"{mae:.4f} <= {champion_mae_limit:.4f}"
+                if champion_mae_limit is not None
+                else "N/A (champion MAE missing)"
+            )
             logger.info(
                 f"New champion: {version} "
-                f"(RMSE {rmse:.4f} < {champion_rmse:.4f})"
+                f"(RMSE {rmse:.4f} < {champion_rmse:.4f}, "
+                f"MAE rule: {mae_msg})"
             )
     else:
-        logger.info(
-            f"Challenger {version} RMSE={rmse:.4f} did NOT beat "
-            f"champion RMSE={champion_rmse:.4f} — keeping champion"
-        )
+        if not rmse_improved:
+            logger.info(
+                f"Challenger {version} rejected: RMSE did not improve "
+                f"({rmse:.4f} >= {champion_rmse:.4f})"
+            )
+        elif not mae_within_tolerance:
+            logger.info(
+                f"Challenger {version} rejected: MAE too high "
+                f"({mae:.4f} > {champion_mae_limit:.4f})"
+            )
 
     register_model(
         version=version,
