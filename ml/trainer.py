@@ -65,7 +65,7 @@ def get_champion_mae() -> float | None:
 
 
 def get_next_version() -> str:
-    """Generate version string — model_v1, model_v2, etc."""
+    from datetime import datetime
     query = text("""
         SELECT COUNT(*) as cnt FROM model_registry
         WHERE symbol = 'GLOBAL'
@@ -73,7 +73,8 @@ def get_next_version() -> str:
     with engine.connect() as conn:
         row = conn.execute(query).fetchone()
     version_num = (row.cnt or 0) + 1
-    return f"model_v{version_num}"
+    ts = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    return f"model_v{version_num}_{ts}"
 
 
 def register_model(
@@ -193,8 +194,8 @@ def train() -> dict:
     trained_at_ts = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     model_filename = f"model__GLOBAL__{version}__{trained_at_ts}.pkl"
     metrics_filename = f"metrics__GLOBAL__{version}__{trained_at_ts}.json"
-    model_path   = os.path.join(MODEL_DIR, model_filename)
-    metrics_path = os.path.join(MODEL_DIR, metrics_filename)
+    model_path   = os.path.join(MODEL_DIR, f"{version}.pkl")
+    metrics_path = os.path.join(MODEL_DIR, f"{version}_metrics.json")
 
     os.makedirs(MODEL_DIR, exist_ok=True)
 

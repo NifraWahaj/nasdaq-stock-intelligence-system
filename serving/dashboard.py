@@ -40,7 +40,7 @@ with st.sidebar:
         f"{'Live' if not prices.empty else 'No data'}"
     )
     st.markdown(
-        f"{'🟢' if champ else '🔴'} ML Model: "
+        f"{'🟢' if champ else '🔴'} Model: "
         f"{champ['model_version'] if champ else 'Not trained'}"
     )
 
