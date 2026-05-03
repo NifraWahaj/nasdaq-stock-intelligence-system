@@ -12,7 +12,7 @@ cp .env.example .env
 docker compose up --build
 ```
  
-That's it. All 4 services start in dependency order:
+All 4 services start in dependency order:
  
 | Service | URL | What it does |
 |---|---|---|
