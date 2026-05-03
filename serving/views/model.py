@@ -14,10 +14,10 @@ def render():
     # Champion banner
     if champion:
         st.success(
-            f"Current Champion: **{champion['model_version']}** | "
-            f"RMSE: **${champion['rmse']:.4f}** | "
-            f"MAE: **${champion['mae']:.4f}** | "
-            f"R²: **{champion['r2']:.4f}**"
+            f"Current Champion: {champion['model_version']} | "
+            f"RMSE: {champion['rmse']:.4f} | "
+            f"MAE: {champion['mae']:.4f} | "
+            f"R²: {champion['r2']:.4f}"
         )
     else:
         st.warning("No champion model yet — ML pipeline hasn't run.")

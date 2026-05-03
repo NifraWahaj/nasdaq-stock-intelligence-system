@@ -3,7 +3,7 @@ import streamlit as st
 from serving.components.db import get_monitoring_logs
 from serving.components.charts import mae_trend_chart
 from serving.components.theme import NASDAQ_GREEN, NASDAQ_RED
-
+import json
 
 def render():
     st.title("Pipeline Monitoring")
@@ -18,12 +18,24 @@ def render():
 
     latest = logs_df.iloc[0]
 
-    # Health banner
-    if bool(latest["drift_detected"]):
+    # Health banner 
+    drift_detected = latest.get("drift_detected", False)
+    drift_feats_raw = latest.get("drift_features", "[]") 
+    
+    try:
+        if isinstance(drift_feats_raw, str):
+            feats = json.loads(drift_feats_raw)
+        else:
+            feats = drift_feats_raw
+        feat_str = ", ".join(feats) if feats else "—"
+    except Exception:
+        feat_str = "Check Logs"
+
+    if bool(drift_detected):
         st.error(
-            f"Data drift detected! "
-            f"PSI score: {latest.get('drift_score', 0):.4f} | "
-            f"Affected features: {latest.get('drift_features', '—')}"
+            f"Data drift detected! PSI score: "
+            f"{latest.get('drift_score', 0):.4f} | "
+            f"Affected features: {feat_str}"
         )
     else:
         st.success("No drift detected — model inputs are stable")
